@@ -1,0 +1,22 @@
+# Qwen3-compatible OpenAI server for a driver reporting CUDA 12.2
+# Target environment: Python 3.11, Linux x86_64, NVIDIA GPU.
+#
+# vLLM 0.8.5.post1 is the first stable release with complete Qwen3 support.
+# Its official CUDA 11.8 wheel is used because CUDA 11.8 applications run on
+# a CUDA 12.2-capable driver, while the default vLLM wheel uses CUDA 12.4.
+# Install this file in an environment separate from requirements.txt.
+
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+torch==2.6.0+cu118
+torchvision==0.21.0+cu118
+transformers==4.51.3
+numpy==1.26.4
+triton==3.2.0
+
+# Pin the official Python 3.11/Linux CUDA 11.8 xFormers wheel explicitly so
+# pip cannot select the identically-versioned CUDA 12.4 build from PyPI.
+xformers @ https://download.pytorch.org/whl/cu118/xformers-0.0.29.post2-cp311-cp311-manylinux_2_28_x86_64.whl
+
+# Official vLLM CUDA 11.8 wheel (CPython 3.8 stable ABI, usable on Python 3.11).
+vllm @ https://github.com/vllm-project/vllm/releases/download/v0.8.5.post1/vllm-0.8.5.post1%2Bcu118-cp38-abi3-manylinux1_x86_64.whl
