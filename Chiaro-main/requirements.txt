@@ -1,0 +1,13 @@
+# scoring / evaluation
+requests
+numpy
+scikit-learn
+
+# training (GPU)
+torch
+transformers
+datasets
+
+# generation pipeline
+openai
+python-dotenv

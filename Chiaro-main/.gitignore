@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+*.tmp
+expb_*/
+stories_*/
+my_preds*.json

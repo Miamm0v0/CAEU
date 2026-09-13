@@ -1,0 +1,106 @@
+[meta]
+version = "0.1"
+
+[appraisal]
+dimension_names = "relevance, epistemic, goal congruence, agency/accountability, control/coping potential"
+definition_lines = """
+- relevance: How much did this event matter to me, and why?
+- epistemic: What did I expect, and how certain or surprised was I?
+- goal_congruence: How did this event help or hurt my goals, needs, or well-being?
+- agency_accountability: Who or what did I see as responsible, and was it intentional or deserved?
+- control_coping_potential: How much control did I have, and how able was I to cope with the consequences?
+"""
+
+[labels]
+positive = "joy, pride, relief, gratitude, excitement"
+negative = "anger, sadness, fear, disgust, embarrassment"
+all = "joy, pride, relief, gratitude, excitement, anger, sadness, fear, disgust, embarrassment"
+
+[templates.direct_constrained]
+system = """You are answering a multiple-choice question about a sentence that describes two people reacting to the same event with contrasting emotions.
+
+Read the sentence carefully and select the single best answer for each agent.
+Reply with EXACTLY two lines in this format:
+AGENT A: <letter>
+AGENT B: <letter>
+Nothing else."""
+user = """SENTENCE: {sentence}
+
+AGENT A: {agent_a_role}
+AGENT B: {agent_b_role}
+
+QUESTION: What emotion does each agent feel?
+
+AGENT A OPTIONS:
+{options_a}
+
+AGENT B OPTIONS:
+{options_b}
+
+Reply with exactly two lines:
+AGENT A: <letter from {letters_a}>
+AGENT B: <letter from {letters_b}>"""
+
+[templates.direct_free]
+system = """You infer how two people feel after the same event. Treat each named agent as a separate experiencer. Use only information supported by the sentence. Do not assume that either agent must feel positively or negatively. Return exactly one valid JSON object without appraisal reasoning, markdown, or commentary."""
+user = """Read the shared event below and predict each agent's emotion independently.
+
+Situation:
+{sentence}
+
+Agent A: {agent_a_role}
+Agent B: {agent_b_role}
+
+For each agent, use this CAREBench-style emotion format:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more labels from: {positive_labels}
+- negative_labels: zero or more labels from: {negative_labels}
+
+The label arrays must be ordered from most to least likely within each valence. The evaluator selects the first label from the side with greater intensity. If both lists are non-empty, use different intensities so that the single strongest side is identifiable. Judge the valence from the situation; no target valence is supplied.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain_constrained]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event from exactly the specified agent's perspective using the five selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Adopt the first-person perspective of the target agent in the shared event below. Infer that agent's cognitive appraisals and emotion immediately after the event.
+
+Shared situation:
+{sentence}
+
+Target agent: {target_role}
+Other agent: {other_role}
+
+Write one concise first-person appraisal for each selected dimension:
+{appraisal_definition_lines}
+
+Then choose exactly one emotion for the target agent from these CHIARO options:
+{allowed_emotions}
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain_free]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event from exactly the specified agent's perspective using the five selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Adopt the first-person perspective of the target agent in the shared event below. Infer that agent's cognitive appraisals and emotion immediately after the event.
+
+Shared situation:
+{sentence}
+
+Target agent: {target_role}
+Other agent: {other_role}
+
+Write one concise first-person appraisal for each selected dimension:
+{appraisal_definition_lines}
+
+Then use this CAREBench-style emotion format without assuming the target valence:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more labels from: {positive_labels}
+- negative_labels: zero or more labels from: {negative_labels}
+
+The label arrays must be ordered from most to least likely within each valence. The evaluator selects the first label from the side with greater intensity. If both lists are non-empty, use different intensities so that the single strongest side is identifiable. Judge the valence from the situation; no target valence is supplied.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
