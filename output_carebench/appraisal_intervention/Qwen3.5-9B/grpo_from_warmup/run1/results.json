@@ -1,0 +1,2165 @@
+{
+  "meta": {
+    "model": null,
+    "first_person_root": "/data/liyanhong/Appraisal_emotion/data/carebench_counterfactual/origin",
+    "counterfactual_gold_root": "/data/liyanhong/Appraisal_emotion/data/carebench_counterfactual/counterfactual",
+    "baseline_model_root": "/data/liyanhong/Appraisal_emotion/output_CAREBENCH/counterfactual/Qwen3.5-9B/grpo_from_warmup-v2/origin",
+    "counterfactual_model_root": "/data/liyanhong/Appraisal_emotion/output_CAREBENCH/counterfactual/Qwen3.5-9B/grpo_from_warmup-v2/counterfactual",
+    "baseline_run_roots": [
+      "/data/liyanhong/Appraisal_emotion/output_CAREBENCH/counterfactual/Qwen3.5-9B/grpo_from_warmup-v2/origin"
+    ],
+    "prompt_path": "/data/liyanhong/Appraisal_emotion/FirstPersonMethod/scripts/prompts/counterfactual_emotion_prompt.toml",
+    "tasks": [
+      "positive-level",
+      "negative-level",
+      "positive-labels",
+      "negative-labels"
+    ],
+    "dimension_source": "gold",
+    "dimensions": [
+      "accountability",
+      "certainty",
+      "congruence",
+      "control",
+      "relevance"
+    ]
+  },
+  "dimension": {
+    "accountability": {
+      "positive-level": {
+        "pearson": 0.21911150575683833,
+        "spearman": 0.23683770263220866,
+        "stats": {
+          "gold_files": 39,
+          "pred_files": 39,
+          "evaluated_samples": 39,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "negative-level": {
+        "pearson": 0.08881231953241185,
+        "spearman": 0.08447421486660157,
+        "stats": {
+          "gold_files": 39,
+          "pred_files": 39,
+          "evaluated_samples": 39,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "positive-labels": {
+        "stats": {
+          "gold_files": 39,
+          "pred_files": 39,
+          "evaluated_samples": 39,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Hopeful, optimistic, encouraged": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Grateful, appreciative, thankful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Glad, happy, joyful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Love, closeness, trust": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Amused, entertained": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Sympathy, concern, compassion": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Inspiration, admiration, appreciation": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Calm, peaceful, relaxed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Proud, confident, determined": {
+            "pearson": 0.0531419204906997,
+            "spearman": 0.04540415642432286,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Excited, enthusiastic, elated": {
+            "pearson": 0.4078784604990587,
+            "spearman": 0.3578102732739989,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      },
+      "negative-labels": {
+        "stats": {
+          "gold_files": 39,
+          "pred_files": 39,
+          "evaluated_samples": 39,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Angry, frustrated, annoyed": {
+            "pearson": 0.2225973005834007,
+            "spearman": 0.2473800027066267,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Worried, nervous, fearful": {
+            "pearson": 0.35952751874747074,
+            "spearman": 0.3376676981894868,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sad, downhearted, unhappy": {
+            "pearson": 0.16007728927321588,
+            "spearman": 0.19390588966244085,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Disgust, distaste, revulsion": {
+            "pearson": 0.08597497224669648,
+            "spearman": 0.2716538440674677,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Despair, hopelessness, sorrow": {
+            "pearson": 0.16787502817427558,
+            "spearman": 0.16813925217376932,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Ashamed, humiliated, embarrassed": {
+            "pearson": 0.24418941258449173,
+            "spearman": 0.27386665295470397,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Lonely, isolated, disconnected from others": {
+            "pearson": 0.16321869359017346,
+            "spearman": -0.018550855115955635,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Panicked, alarmed, freaked out": {
+            "pearson": 0.06681186017623408,
+            "spearman": 0.02109950284041556,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Guilty, blameworthy, repentant": {
+            "pearson": -0.03447766048592505,
+            "spearman": -0.16314839307148665,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Confused, disoriented, surprised": {
+            "pearson": 0.42549849888410474,
+            "spearman": 0.49245112205922914,
+            "stats": {
+              "gold_files": 39,
+              "pred_files": 39,
+              "evaluated_samples": 39,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      }
+    },
+    "certainty": {
+      "positive-level": {
+        "pearson": 0.13732228237447422,
+        "spearman": 0.20730761387655294,
+        "stats": {
+          "gold_files": 44,
+          "pred_files": 44,
+          "evaluated_samples": 44,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "negative-level": {
+        "pearson": 0.0291109048045211,
+        "spearman": 0.05430007193036777,
+        "stats": {
+          "gold_files": 44,
+          "pred_files": 44,
+          "evaluated_samples": 44,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "positive-labels": {
+        "stats": {
+          "gold_files": 44,
+          "pred_files": 44,
+          "evaluated_samples": 44,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Hopeful, optimistic, encouraged": {
+            "pearson": -0.17461393946328774,
+            "spearman": -0.21258095746019257,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Grateful, appreciative, thankful": {
+            "pearson": -0.3344923786571572,
+            "spearman": -0.22303463087673323,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Glad, happy, joyful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Love, closeness, trust": {
+            "pearson": 0.038013322255823705,
+            "spearman": 0.08755675710518807,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Amused, entertained": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Sympathy, concern, compassion": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Inspiration, admiration, appreciation": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Calm, peaceful, relaxed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Proud, confident, determined": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Excited, enthusiastic, elated": {
+            "pearson": 0.4314692142655756,
+            "spearman": 0.3274620875852807,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      },
+      "negative-labels": {
+        "stats": {
+          "gold_files": 44,
+          "pred_files": 44,
+          "evaluated_samples": 44,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Angry, frustrated, annoyed": {
+            "pearson": -0.09586255971512139,
+            "spearman": -0.15912918360499229,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Worried, nervous, fearful": {
+            "pearson": 0.2592624900112478,
+            "spearman": 0.24034871335098568,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sad, downhearted, unhappy": {
+            "pearson": -0.0872666391834921,
+            "spearman": -0.08208189759125424,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Disgust, distaste, revulsion": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Despair, hopelessness, sorrow": {
+            "pearson": 0.12844212995589274,
+            "spearman": 0.1262187347464857,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Ashamed, humiliated, embarrassed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Lonely, isolated, disconnected from others": {
+            "pearson": -0.07396746267744966,
+            "spearman": -0.04462365079324522,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Panicked, alarmed, freaked out": {
+            "pearson": 0.1484826476402963,
+            "spearman": 0.19070989527876683,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Guilty, blameworthy, repentant": {
+            "pearson": -0.06204054078312158,
+            "spearman": -0.07669713182730241,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Confused, disoriented, surprised": {
+            "pearson": 0.41882021387468227,
+            "spearman": 0.4391779743240821,
+            "stats": {
+              "gold_files": 44,
+              "pred_files": 44,
+              "evaluated_samples": 44,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      }
+    },
+    "congruence": {
+      "positive-level": {
+        "pearson": 0.20122516697592494,
+        "spearman": 0.365804209087311,
+        "stats": {
+          "gold_files": 33,
+          "pred_files": 33,
+          "evaluated_samples": 33,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "negative-level": {
+        "pearson": 0.10014825202315529,
+        "spearman": 0.07492322304671947,
+        "stats": {
+          "gold_files": 33,
+          "pred_files": 33,
+          "evaluated_samples": 33,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "positive-labels": {
+        "stats": {
+          "gold_files": 33,
+          "pred_files": 33,
+          "evaluated_samples": 33,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Hopeful, optimistic, encouraged": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Grateful, appreciative, thankful": {
+            "pearson": -0.11968623957807144,
+            "spearman": -0.2856692040637524,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Glad, happy, joyful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Love, closeness, trust": {
+            "pearson": -0.14088283420265557,
+            "spearman": -0.37263755291718503,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Amused, entertained": {
+            "pearson": 0.6778537936945558,
+            "spearman": 0.47613731327275416,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sympathy, concern, compassion": {
+            "pearson": -0.23022834329164588,
+            "spearman": -0.29687052944268527,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Inspiration, admiration, appreciation": {
+            "pearson": -0.30745592237726005,
+            "spearman": -0.41434796938518875,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Calm, peaceful, relaxed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Proud, confident, determined": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Excited, enthusiastic, elated": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          }
+        }
+      },
+      "negative-labels": {
+        "stats": {
+          "gold_files": 33,
+          "pred_files": 33,
+          "evaluated_samples": 33,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Angry, frustrated, annoyed": {
+            "pearson": 0.2729216860630885,
+            "spearman": 0.3398264876937129,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Worried, nervous, fearful": {
+            "pearson": 0.36411424731805053,
+            "spearman": 0.350233869553369,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sad, downhearted, unhappy": {
+            "pearson": -0.021550545481811345,
+            "spearman": 0.01709332409185137,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Disgust, distaste, revulsion": {
+            "pearson": 0.45988182506970166,
+            "spearman": 0.2961658348433704,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Despair, hopelessness, sorrow": {
+            "pearson": 0.16656657954990134,
+            "spearman": 0.16453571149823562,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Ashamed, humiliated, embarrassed": {
+            "pearson": 0.44333164929267405,
+            "spearman": 0.21809211682922258,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Lonely, isolated, disconnected from others": {
+            "pearson": -0.006600733959912997,
+            "spearman": 0.03508046451496094,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Panicked, alarmed, freaked out": {
+            "pearson": -0.23849777916846893,
+            "spearman": -0.18783156524571387,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Guilty, blameworthy, repentant": {
+            "pearson": -0.22109866739708137,
+            "spearman": -0.3745824859680605,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Confused, disoriented, surprised": {
+            "pearson": 0.04243822277205108,
+            "spearman": 0.33616070495547495,
+            "stats": {
+              "gold_files": 33,
+              "pred_files": 33,
+              "evaluated_samples": 33,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      }
+    },
+    "control": {
+      "positive-level": {
+        "pearson": 0.20976272922411712,
+        "spearman": 0.27242281957344155,
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "negative-level": {
+        "pearson": 0.18995589546672353,
+        "spearman": 0.3250066911912307,
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "positive-labels": {
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Hopeful, optimistic, encouraged": {
+            "pearson": 0.014257001445901488,
+            "spearman": 0.007309906638468616,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Grateful, appreciative, thankful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Glad, happy, joyful": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Love, closeness, trust": {
+            "pearson": -0.04601955537364902,
+            "spearman": -0.06291031513904943,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Amused, entertained": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Sympathy, concern, compassion": {
+            "pearson": -0.0035984778782994224,
+            "spearman": 0.024330012062822974,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Inspiration, admiration, appreciation": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Calm, peaceful, relaxed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Proud, confident, determined": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Excited, enthusiastic, elated": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          }
+        }
+      },
+      "negative-labels": {
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Angry, frustrated, annoyed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Worried, nervous, fearful": {
+            "pearson": 0.323437499963323,
+            "spearman": 0.257058110257236,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sad, downhearted, unhappy": {
+            "pearson": 0.02442412130501834,
+            "spearman": 0.032800643643428815,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Disgust, distaste, revulsion": {
+            "pearson": -0.011364279543127838,
+            "spearman": 0.02432688661967785,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Despair, hopelessness, sorrow": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Ashamed, humiliated, embarrassed": {
+            "pearson": 0.16275221460689532,
+            "spearman": 0.2910853530086748,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Lonely, isolated, disconnected from others": {
+            "pearson": -0.012861449998564225,
+            "spearman": 0.08964093523194576,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Panicked, alarmed, freaked out": {
+            "pearson": -0.23858150018376714,
+            "spearman": -0.23414871532016437,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Guilty, blameworthy, repentant": {
+            "pearson": -0.12936200513882115,
+            "spearman": -0.22109184589061906,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Confused, disoriented, surprised": {
+            "pearson": 0.4083546213159731,
+            "spearman": 0.32836212192877734,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      }
+    },
+    "relevance": {
+      "positive-level": {
+        "pearson": 0.63518269521762,
+        "spearman": 0.19348603062383837,
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "negative-level": {
+        "pearson": 0.0938822743437007,
+        "spearman": 0.17592525024152236,
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "warnings": []
+      },
+      "positive-labels": {
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Hopeful, optimistic, encouraged": {
+            "pearson": 0.042391153479501405,
+            "spearman": 0.006847985329228293,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Grateful, appreciative, thankful": {
+            "pearson": -0.006271521652929367,
+            "spearman": -0.0229515015203326,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Glad, happy, joyful": {
+            "pearson": 0.4838124969874953,
+            "spearman": 0.31366773542365683,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Love, closeness, trust": {
+            "pearson": 0.20232141601184886,
+            "spearman": 0.16326756873746573,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Amused, entertained": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Sympathy, concern, compassion": {
+            "pearson": 0.06638524677765605,
+            "spearman": 0.1992598814750699,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Inspiration, admiration, appreciation": {
+            "pearson": -0.005240404675351219,
+            "spearman": 0.0,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Calm, peaceful, relaxed": {
+            "pearson": null,
+            "spearman": null,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": [
+              "Pearson unavailable: Zero variance",
+              "Spearman unavailable: Zero variance"
+            ]
+          },
+          "Proud, confident, determined": {
+            "pearson": 0.2727824121601978,
+            "spearman": 0.30237678735470047,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Excited, enthusiastic, elated": {
+            "pearson": 0.4078645046410393,
+            "spearman": 0.3359973620403689,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      },
+      "negative-labels": {
+        "stats": {
+          "gold_files": 43,
+          "pred_files": 43,
+          "evaluated_samples": 43,
+          "skipped_missing_first_person": 0,
+          "skipped_missing_baseline": 0,
+          "skipped_missing_counterfactual_pred_file": 0,
+          "skipped_invalid_first_person_human": 0,
+          "skipped_invalid_baseline": 0,
+          "skipped_invalid_human_counterfactual": 0,
+          "skipped_invalid_model_counterfactual": 0
+        },
+        "categories": {
+          "Angry, frustrated, annoyed": {
+            "pearson": -0.07683475740701512,
+            "spearman": -0.036989498784821585,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Worried, nervous, fearful": {
+            "pearson": 0.06619056472153086,
+            "spearman": 0.04338565262982194,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Sad, downhearted, unhappy": {
+            "pearson": 0.10045051458184974,
+            "spearman": 0.21436297590953074,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Disgust, distaste, revulsion": {
+            "pearson": 0.5615036216117884,
+            "spearman": 0.33265979497473364,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Despair, hopelessness, sorrow": {
+            "pearson": 0.15763623516357367,
+            "spearman": 0.18708476545659183,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Ashamed, humiliated, embarrassed": {
+            "pearson": 0.3492303446712991,
+            "spearman": 0.26536346241949127,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Lonely, isolated, disconnected from others": {
+            "pearson": 0.06398637292413743,
+            "spearman": 0.11444703095695599,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Panicked, alarmed, freaked out": {
+            "pearson": -0.24774732654866688,
+            "spearman": -0.24325150782748192,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Guilty, blameworthy, repentant": {
+            "pearson": 0.34589609913250646,
+            "spearman": 0.4401208298120064,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          },
+          "Confused, disoriented, surprised": {
+            "pearson": 0.22734046925379017,
+            "spearman": 0.3233774261332805,
+            "stats": {
+              "gold_files": 43,
+              "pred_files": 43,
+              "evaluated_samples": 43,
+              "skipped_missing_first_person": 0,
+              "skipped_missing_baseline": 0,
+              "skipped_missing_counterfactual_pred_file": 0,
+              "skipped_invalid_first_person_human": 0,
+              "skipped_invalid_baseline": 0,
+              "skipped_invalid_human_counterfactual": 0,
+              "skipped_invalid_model_counterfactual": 0
+            },
+            "warnings": []
+          }
+        }
+      }
+    }
+  }
+}

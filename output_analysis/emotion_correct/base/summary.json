@@ -1,0 +1,263 @@
+{
+  "meta": {
+    "gold": "/data/liyanhong/Appraisal_emotion/data/first_person_split/raw/test.json",
+    "prediction_root": "/data/liyanhong/Appraisal_emotion/output_CAREBENCH/test_results/baseline_transformers_test/Qwen3.5-9B/run_100smples",
+    "prompt_path": "/data/liyanhong/Appraisal_emotion/FirstPersonMethod/scripts/prompts/baseline_prompt.toml",
+    "appraisal_target": "appraisal",
+    "appraisal_representation": "five-dimensional free-text reasoning",
+    "appraisal_metrics": [
+      "BLEU-4",
+      "ROUGE-1 F1",
+      "ROUGE-2 F1",
+      "ROUGE-L F1",
+      "BERTScore F1"
+    ],
+    "appraisal_metric": "ROUGE-L F1",
+    "primary_appraisal_metric": "ROUGE-L F1",
+    "bertscore_model": "/data/liyanhong/model/roberta-large",
+    "bertscore_num_layers": 17,
+    "bertscore_device": "cuda",
+    "emotion_selection_metric": "sample-level joint emotion-label F1",
+    "emotion_f1_threshold": 0.6,
+    "appraisal_dimensions": 5,
+    "min_appraisal_coverage": 1.0,
+    "low_appraisal_score_threshold": 0.5,
+    "bootstrap_samples": 5000,
+    "permutation_samples": 5000,
+    "seed": 42
+  },
+  "coverage": {
+    "gold_samples": 100,
+    "complete_samples": 98,
+    "excluded_missing_emotion_prediction": 0,
+    "excluded_invalid_emotion_gold": 0,
+    "excluded_insufficient_appraisal_coverage": 2,
+    "missing_core_appraisal_prediction_file": 0
+  },
+  "headline": {
+    "emotion_correct_samples": 45,
+    "emotion_correct_rate": 0.45918367346938777,
+    "emotion_correct_but_low_appraisal_score_samples": 45,
+    "emotion_correct_but_low_appraisal_score_rate": 1.0,
+    "appraisal_reasoning_bleu_given_emotion_correct": 0.0013305912671618565,
+    "appraisal_reasoning_rouge_1_given_emotion_correct": 0.19417119460287327,
+    "appraisal_reasoning_rouge_2_given_emotion_correct": 0.03045784185270449,
+    "appraisal_reasoning_rouge_l_given_emotion_correct": 0.14696628876636,
+    "appraisal_reasoning_bertscore_given_emotion_correct": 0.8746021170086331
+  },
+  "groups": {
+    "all_complete": {
+      "samples": 98,
+      "appraisal_pairs": 490,
+      "low_appraisal_score_sample_rate": 1.0,
+      "appraisal_reasoning_bleu": 0.0008566841030316956,
+      "mean_sample_appraisal_reasoning_bleu": 0.0008566841030316955,
+      "median_sample_appraisal_reasoning_bleu": 0.0,
+      "appraisal_reasoning_rouge_1": 0.1922622232115321,
+      "mean_sample_appraisal_reasoning_rouge_1": 0.1922622232115319,
+      "median_sample_appraisal_reasoning_rouge_1": 0.18913686265852325,
+      "appraisal_reasoning_rouge_2": 0.028997534282032313,
+      "mean_sample_appraisal_reasoning_rouge_2": 0.028997534282032323,
+      "median_sample_appraisal_reasoning_rouge_2": 0.025921985815602837,
+      "appraisal_reasoning_rouge_l": 0.14545482999676101,
+      "mean_sample_appraisal_reasoning_rouge_l": 0.14545482999676085,
+      "median_sample_appraisal_reasoning_rouge_l": 0.14644468612465444,
+      "appraisal_reasoning_bertscore": 0.8746051911188631,
+      "mean_sample_appraisal_reasoning_bertscore": 0.874605191118863,
+      "median_sample_appraisal_reasoning_bertscore": 0.8748946547508241
+    },
+    "emotion_correct": {
+      "samples": 45,
+      "appraisal_pairs": 225,
+      "low_appraisal_score_sample_rate": 1.0,
+      "appraisal_reasoning_bleu": 0.0013305912671618565,
+      "mean_sample_appraisal_reasoning_bleu": 0.0013305912671618565,
+      "median_sample_appraisal_reasoning_bleu": 0.0,
+      "appraisal_reasoning_rouge_1": 0.19417119460287327,
+      "mean_sample_appraisal_reasoning_rouge_1": 0.19417119460287335,
+      "median_sample_appraisal_reasoning_rouge_1": 0.1971330573178778,
+      "appraisal_reasoning_rouge_2": 0.03045784185270449,
+      "mean_sample_appraisal_reasoning_rouge_2": 0.0304578418527045,
+      "median_sample_appraisal_reasoning_rouge_2": 0.030274375933432896,
+      "appraisal_reasoning_rouge_l": 0.14696628876636,
+      "mean_sample_appraisal_reasoning_rouge_l": 0.14696628876636014,
+      "median_sample_appraisal_reasoning_rouge_l": 0.1498738741483902,
+      "appraisal_reasoning_bertscore": 0.8746021170086331,
+      "mean_sample_appraisal_reasoning_bertscore": 0.8746021170086329,
+      "median_sample_appraisal_reasoning_bertscore": 0.8745596051216126
+    },
+    "emotion_incorrect": {
+      "samples": 53,
+      "appraisal_pairs": 265,
+      "low_appraisal_score_sample_rate": 1.0,
+      "appraisal_reasoning_bleu": 0.0004543100957513702,
+      "mean_sample_appraisal_reasoning_bleu": 0.00045431009575137024,
+      "median_sample_appraisal_reasoning_bleu": 0.0,
+      "appraisal_reasoning_rouge_1": 0.19064139844529845,
+      "mean_sample_appraisal_reasoning_rouge_1": 0.1906413984452986,
+      "median_sample_appraisal_reasoning_rouge_1": 0.18644932795308733,
+      "appraisal_reasoning_rouge_2": 0.027757650495612553,
+      "mean_sample_appraisal_reasoning_rouge_2": 0.027757650495612563,
+      "median_sample_appraisal_reasoning_rouge_2": 0.024331797235023038,
+      "appraisal_reasoning_rouge_l": 0.14417151594710098,
+      "mean_sample_appraisal_reasoning_rouge_l": 0.14417151594710104,
+      "median_sample_appraisal_reasoning_rouge_l": 0.1400054371878172,
+      "appraisal_reasoning_bertscore": 0.8746078012124547,
+      "mean_sample_appraisal_reasoning_bertscore": 0.8746078012124547,
+      "median_sample_appraisal_reasoning_bertscore": 0.8754268169403077
+    }
+  },
+  "correct_vs_incorrect": {
+    "metric": "sample_mean_core_appraisal_rouge_l_f1",
+    "emotion_correct_mean": 0.14696628876636014,
+    "emotion_correct_bootstrap_95_ci": [
+      0.1381356621218636,
+      0.1552701277173969
+    ],
+    "emotion_incorrect_mean": 0.14417151594710104,
+    "emotion_incorrect_bootstrap_95_ci": [
+      0.13626598889981098,
+      0.15237647653811073
+    ],
+    "correct_minus_incorrect": 0.002794772819259106,
+    "difference_bootstrap_95_ci": [
+      -0.009598543154707068,
+      0.014462008304039847
+    ],
+    "two_sided_permutation_p": 0.6376724655068986,
+    "point_biserial_correlation": 0.0470320306385454
+  },
+  "dimension": {
+    "relevance": {
+      "all_complete": {
+        "pairs": 98,
+        "bleu": 0.0012284915854501336,
+        "rouge_1_f1": 0.21941576923239817,
+        "rouge_2_f1": 0.03151791746839571,
+        "rouge_l_f1": 0.1524982491244762,
+        "bertscore_f1": 0.8757543393543789
+      },
+      "emotion_correct": {
+        "pairs": 45,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.20956504735937237,
+        "rouge_2_f1": 0.029012339280999687,
+        "rouge_l_f1": 0.15160472047970366,
+        "bertscore_f1": 0.8749479293823242
+      },
+      "emotion_incorrect": {
+        "pairs": 53,
+        "bleu": 0.0022715504787568512,
+        "rouge_1_f1": 0.22777958969062775,
+        "rouge_2_f1": 0.03364529517467539,
+        "rouge_l_f1": 0.15325690552098137,
+        "bertscore_f1": 0.8764390270665007
+      }
+    },
+    "congruence": {
+      "all_complete": {
+        "pairs": 98,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.20275739034726264,
+        "rouge_2_f1": 0.028612322947910867,
+        "rouge_l_f1": 0.14981799819087493,
+        "bertscore_f1": 0.877733801700631
+      },
+      "emotion_correct": {
+        "pairs": 45,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.20530996563301637,
+        "rouge_2_f1": 0.03306232551635151,
+        "rouge_l_f1": 0.14898630403915045,
+        "bertscore_f1": 0.8773206737306383
+      },
+      "emotion_incorrect": {
+        "pairs": 53,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.20059010944426447,
+        "rouge_2_f1": 0.024834018880366942,
+        "rouge_l_f1": 0.15052415360271673,
+        "bertscore_f1": 0.8780845707317568
+      }
+    },
+    "accountability": {
+      "all_complete": {
+        "pairs": 98,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.1675759078772744,
+        "rouge_2_f1": 0.024037020011770865,
+        "rouge_l_f1": 0.13183897176919504,
+        "bertscore_f1": 0.86884063908032
+      },
+      "emotion_correct": {
+        "pairs": 45,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.16884685497049895,
+        "rouge_2_f1": 0.022481352457888473,
+        "rouge_l_f1": 0.1311745626556098,
+        "bertscore_f1": 0.8686010466681586
+      },
+      "emotion_incorrect": {
+        "pairs": 53,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.1664968018547253,
+        "rouge_2_f1": 0.02535786982167101,
+        "rouge_l_f1": 0.13240309271469203,
+        "bertscore_f1": 0.8690440666000798
+      }
+    },
+    "control": {
+      "all_complete": {
+        "pairs": 98,
+        "bleu": 0.0009096540640687981,
+        "rouge_1_f1": 0.21236912314111675,
+        "rouge_2_f1": 0.03758821628065582,
+        "rouge_l_f1": 0.16797858070941615,
+        "bertscore_f1": 0.8788332683699471
+      },
+      "emotion_correct": {
+        "pairs": 45,
+        "bleu": 0.0019810244061942714,
+        "rouge_1_f1": 0.22229650350755062,
+        "rouge_2_f1": 0.044513142074539276,
+        "rouge_l_f1": 0.17656844804994506,
+        "bertscore_f1": 0.8793294416533576
+      },
+      "emotion_incorrect": {
+        "pairs": 53,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.20394021528282386,
+        "rouge_2_f1": 0.031708562304717046,
+        "rouge_l_f1": 0.1606852971184011,
+        "bertscore_f1": 0.8784119891670515
+      }
+    },
+    "certainty": {
+      "all_complete": {
+        "pairs": 98,
+        "bleu": 0.0021452748656395457,
+        "rouge_1_f1": 0.15919292545960723,
+        "rouge_2_f1": 0.023232194701428347,
+        "rouge_l_f1": 0.1251403501898415,
+        "bertscore_f1": 0.8718639070890388
+      },
+      "emotion_correct": {
+        "pairs": 45,
+        "bleu": 0.004671931929615011,
+        "rouge_1_f1": 0.16483760154392857,
+        "rouge_2_f1": 0.023220049933743523,
+        "rouge_l_f1": 0.12649740860739156,
+        "bertscore_f1": 0.8728114936086867
+      },
+      "emotion_incorrect": {
+        "pairs": 53,
+        "bleu": 0.0,
+        "rouge_1_f1": 0.15440027595405148,
+        "rouge_2_f1": 0.02324250629663244,
+        "rouge_l_f1": 0.12398813077871416,
+        "bertscore_f1": 0.8710593524968849
+      }
+    }
+  },
+  "interpretation_guardrail": "Low reference-overlap on emotion-correct samples shows that correct emotion labels do not guarantee reference-aligned appraisal text. Automatic text-similarity metrics are not complete measures of psychological reasoning."
+}

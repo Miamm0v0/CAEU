@@ -1,0 +1,348 @@
+{
+  "appraisals": {
+    "overall": {
+      "rmse": 0.502211020479349,
+      "accuracy": 0.3513636363636364
+    },
+    "dimension": {
+      "relevance.general": {
+        "rmse": 0.35968736424845393,
+        "accuracy": 0.6
+      },
+      "relevance.urgency": {
+        "rmse": 0.5220153254455275,
+        "accuracy": 0.24
+      },
+      "relevance.goals": {
+        "rmse": 0.5825590098865522,
+        "accuracy": 0.32
+      },
+      "relevance.bodily motives": {
+        "rmse": 0.5717298313014636,
+        "accuracy": 0.25
+      },
+      "relevance.social motives": {
+        "rmse": 0.41306779104645763,
+        "accuracy": 0.59
+      },
+      "relevance.identity motives": {
+        "rmse": 0.5220153254455275,
+        "accuracy": 0.22
+      },
+      "certainty.construal": {
+        "rmse": 0.41306779104645763,
+        "accuracy": 0.42
+      },
+      "certainty.outlook": {
+        "rmse": 0.5031152949374527,
+        "accuracy": 0.19
+      },
+      "certainty.predictability": {
+        "rmse": 0.6264982043070834,
+        "accuracy": 0.25
+      },
+      "certainty.novelty": {
+        "rmse": 0.5573374202401988,
+        "accuracy": 0.26
+      },
+      "congruence.general": {
+        "rmse": 0.41982139059366663,
+        "accuracy": 0.5
+      },
+      "congruence.outlook": {
+        "rmse": 0.45689167206242665,
+        "accuracy": 0.33
+      },
+      "congruence.positive prediction error": {
+        "rmse": 0.44511234536912136,
+        "accuracy": 0.36
+      },
+      "congruence.negative prediction error": {
+        "rmse": 0.4710360920354193,
+        "accuracy": 0.35
+      },
+      "control.general": {
+        "rmse": 0.5159941860137573,
+        "accuracy": 0.28
+      },
+      "control.select": {
+        "rmse": 0.5528336096873995,
+        "accuracy": 0.29
+      },
+      "control.vicarious": {
+        "rmse": 0.5055937104039171,
+        "accuracy": 0.4
+      },
+      "control.effortful": {
+        "rmse": 0.5338539126015656,
+        "accuracy": 0.29
+      },
+      "accountability.self": {
+        "rmse": 0.525,
+        "accuracy": 0.34
+      },
+      "accountability.other": {
+        "rmse": 0.5285593627966494,
+        "accuracy": 0.35
+      },
+      "accountability.intentionality": {
+        "rmse": 0.45,
+        "accuracy": 0.48
+      },
+      "accountability.fairness": {
+        "rmse": 0.48541219597368995,
+        "accuracy": 0.42
+      }
+    },
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred": 1,
+      "evaluated": 100,
+      "skipped_in_gold": 0
+    }
+  },
+  "positive-level": {
+    "rmse": 0.2798809270624444,
+    "accuracy": 0.61,
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred": 1,
+      "evaluated": 100,
+      "skipped_in_gold": 0
+    }
+  },
+  "negative-level": {
+    "rmse": 0.4085883557377088,
+    "accuracy": 0.32,
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred": 1,
+      "evaluated": 100,
+      "skipped_in_gold": 0
+    }
+  },
+  "positive-labels": {
+    "accuracy": 0.45,
+    "example-F1": {
+      "p": 0.7001150793650794,
+      "r": 0.7067539682539683,
+      "f1": 0.6810027195027195
+    },
+    "micro-F1": {
+      "p": 0.5254901960784314,
+      "r": 0.6261682242990654,
+      "f1": 0.5714285714285715
+    },
+    "macro-F1": {
+      "overall": {
+        "p": 0.4717468376643604,
+        "r": 0.5659595959595959,
+        "f1": 0.4909070049139861
+      },
+      "label_group": {
+        "Hopeful, optimistic, encouraged": {
+          "p": 0.6666666666666666,
+          "r": 0.45,
+          "f1": 0.5373134328358209
+        },
+        "Grateful, appreciative, thankful": {
+          "p": 0.575,
+          "r": 0.8518518518518519,
+          "f1": 0.6865671641791045
+        },
+        "Glad, happy, joyful": {
+          "p": 0.6571428571428571,
+          "r": 0.8518518518518519,
+          "f1": 0.7419354838709677
+        },
+        "Love, closeness, trust": {
+          "p": 0.5172413793103449,
+          "r": 0.7142857142857143,
+          "f1": 0.6000000000000001
+        },
+        "Amused, entertained": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0
+        },
+        "Sympathy, concern, compassion": {
+          "p": 0.4,
+          "r": 0.18181818181818182,
+          "f1": 0.25000000000000006
+        },
+        "Inspiration, admiration, appreciation": {
+          "p": 0.3235294117647059,
+          "r": 0.7857142857142857,
+          "f1": 0.45833333333333326
+        },
+        "Calm, peaceful, relaxed": {
+          "p": 0.5384615384615384,
+          "r": 0.3333333333333333,
+          "f1": 0.41176470588235287
+        },
+        "Proud, confident, determined": {
+          "p": 0.5555555555555556,
+          "r": 0.7407407407407407,
+          "f1": 0.634920634920635
+        },
+        "Excited, enthusiastic, elated": {
+          "p": 0.4838709677419355,
+          "r": 0.75,
+          "f1": 0.5882352941176471
+        }
+      }
+    },
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred": 1,
+      "evaluated": 100,
+      "skipped_in_gold": 0
+    }
+  },
+  "negative-labels": {
+    "accuracy": 0.22,
+    "example-F1": {
+      "p": 0.5082658730158729,
+      "r": 0.6773809523809524,
+      "f1": 0.5499404413096362
+    },
+    "micro-F1": {
+      "p": 0.5514950166112956,
+      "r": 0.6859504132231405,
+      "f1": 0.6114180478821363
+    },
+    "macro-F1": {
+      "overall": {
+        "p": 0.4727707290620506,
+        "r": 0.5900271499988482,
+        "f1": 0.5145258458892729
+      },
+      "label_group": {
+        "Angry, frustrated, annoyed": {
+          "p": 0.7045454545454546,
+          "r": 0.775,
+          "f1": 0.7380952380952381
+        },
+        "Worried, nervous, fearful": {
+          "p": 0.6458333333333334,
+          "r": 0.7380952380952381,
+          "f1": 0.6888888888888889
+        },
+        "Sad, downhearted, unhappy": {
+          "p": 0.6716417910447762,
+          "r": 0.8490566037735849,
+          "f1": 0.7500000000000001
+        },
+        "Disgust, distaste, revulsion": {
+          "p": 0.4444444444444444,
+          "r": 0.5,
+          "f1": 0.47058823529411764
+        },
+        "Despair, hopelessness, sorrow": {
+          "p": 0.4782608695652174,
+          "r": 0.88,
+          "f1": 0.619718309859155
+        },
+        "Ashamed, humiliated, embarrassed": {
+          "p": 0.38461538461538464,
+          "r": 0.38461538461538464,
+          "f1": 0.38461538461538464
+        },
+        "Lonely, isolated, disconnected from others": {
+          "p": 0.2777777777777778,
+          "r": 0.38461538461538464,
+          "f1": 0.3225806451612903
+        },
+        "Panicked, alarmed, freaked out": {
+          "p": 0.47058823529411764,
+          "r": 0.6666666666666666,
+          "f1": 0.5517241379310345
+        },
+        "Guilty, blameworthy, repentant": {
+          "p": 0.25,
+          "r": 0.5,
+          "f1": 0.3333333333333333
+        },
+        "Confused, disoriented, surprised": {
+          "p": 0.4,
+          "r": 0.2222222222222222,
+          "f1": 0.2857142857142857
+        }
+      }
+    },
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred": 1,
+      "evaluated": 100,
+      "skipped_in_gold": 0
+    }
+  },
+  "core-appraisals": {
+    "overall": {
+      "bleu": 0.0449063838215659,
+      "rouge-1": 0.29301323515993655,
+      "rouge-2": 0.12091712004036284,
+      "rouge-l": 0.25723318498160447,
+      "bertscore": 0.8856681970707384,
+      "bleurt": 0.49537223769000255
+    },
+    "dimension": {
+      "relevance": {
+        "bleu": 0.046110624261236556,
+        "rouge-1": 0.33739476453387995,
+        "rouge-2": 0.1372295295428116,
+        "rouge-l": 0.27971567485360377,
+        "bertscore": 0.8898358941078186,
+        "bleurt": 0.521518058180809
+      },
+      "congruence": {
+        "bleu": 0.034145233688216536,
+        "rouge-1": 0.27994553191731963,
+        "rouge-2": 0.11372634965821142,
+        "rouge-l": 0.23746752912161884,
+        "bertscore": 0.8864275056123734,
+        "bleurt": 0.5029476329684257
+      },
+      "accountability": {
+        "bleu": 0.060281670324220854,
+        "rouge-1": 0.2761330189610296,
+        "rouge-2": 0.1221450816169717,
+        "rouge-l": 0.25496134682118266,
+        "bertscore": 0.8825999730825425,
+        "bleurt": 0.481627858877182
+      },
+      "control": {
+        "bleu": 0.05107804964909031,
+        "rouge-1": 0.32152182005440855,
+        "rouge-2": 0.1272541763622851,
+        "rouge-l": 0.28590151294008165,
+        "bertscore": 0.886211303472519,
+        "bleurt": 0.4798828208446503
+      },
+      "certainty": {
+        "bleu": 0.03267164643738145,
+        "rouge-1": 0.24919466901004586,
+        "rouge-2": 0.10388991900074121,
+        "rouge-l": 0.2275257117060236,
+        "bertscore": 0.8832172909561469,
+        "bleurt": 0.4907932375766793
+      }
+    },
+    "stats": {
+      "gold_total": 100,
+      "pred_total": 99,
+      "missing_pred_samples": 1,
+      "missing_pred_answers": 5,
+      "missing_gold_answers": 2,
+      "evaluated": 100,
+      "evaluated_pairs": 498,
+      "skipped_in_gold": 0
+    },
+    "warnings": []
+  }
+}

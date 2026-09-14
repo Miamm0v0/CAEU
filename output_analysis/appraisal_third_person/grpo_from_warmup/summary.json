@@ -1,0 +1,794 @@
+{
+  "meta": {
+    "first_person_gold": "/data/liyanhong/Appraisal_emotion/data/first_person_split/raw/test.json",
+    "third_person_gold": "/data/liyanhong/Appraisal_emotion/third_person.json",
+    "prediction_root": "/data/liyanhong/Appraisal_emotion/output_CAREBENCH/test_results/grpo_transformers_test/Qwen3.5-9B/grpo_from_warmup_v2/chain-all_chain-emotion_core-from-chain-emotion",
+    "prediction_source": "core-appraisals",
+    "selection_mode": "bottom-quantile",
+    "selection_metric": "bertscore",
+    "low_threshold": 0.2,
+    "bottom_fraction": 0.25,
+    "effective_cutoff": 0.8773610115051269,
+    "min_dimension_coverage": 1.0,
+    "min_third_person_references": 1,
+    "bertscore_model": "/data/liyanhong/model/roberta-large",
+    "bertscore_num_layers": 17,
+    "bootstrap_unit": "sample",
+    "third_person_primary_aggregation": "mean over annotators"
+  },
+  "coverage": {
+    "first_person_samples": 100,
+    "third_person_samples": 500,
+    "matched_complete_samples": 45,
+    "missing_third_person_sample": 55,
+    "missing_prediction_file": 0,
+    "insufficient_dimension_coverage": 0,
+    "low_first_person_samples": 12
+  },
+  "headline": {
+    "selected_low_samples": 12,
+    "selection_metric": "bertscore",
+    "low_subset_first_person_mean": 0.8699188152949014,
+    "low_subset_third_person_mean_reference": 0.8782748005787533,
+    "low_subset_mean_reference_uplift": 0.008355985283851628,
+    "low_subset_mean_reference_uplift_95_ci": [
+      0.004926816821098338,
+      0.011729991038640336
+    ],
+    "low_subset_mean_reference_sign_flip_p": 0.0013997200559888023,
+    "low_subset_third_mean_better_sample_rate": 0.9166666666666666,
+    "all_samples_mean_reference_uplift": -0.004071612940894206
+  },
+  "all_matched": {
+    "bleu": {
+      "samples": 45,
+      "dimension_pairs": 225,
+      "first_person_mean": 0.027453167160887675,
+      "third_person_mean_reference": 0.00960923798014458,
+      "third_person_best_reference": 0.03893276046768767,
+      "mean_reference_uplift": -0.01784392918074309,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.026373754835717245,
+        -0.009614786431848151
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.0001999600079984003,
+      "best_reference_uplift": 0.011479593306799993,
+      "sample_third_mean_better_rate": 0.3333333333333333,
+      "sample_any_third_better_rate": 0.5777777777777777,
+      "pair_third_mean_better_rate": 0.27111111111111114,
+      "pair_any_third_better_rate": 0.32
+    },
+    "rouge-1": {
+      "samples": 45,
+      "dimension_pairs": 225,
+      "first_person_mean": 0.2699969830912902,
+      "third_person_mean_reference": 0.22818976546017808,
+      "third_person_best_reference": 0.3346689769772512,
+      "mean_reference_uplift": -0.041807217631112226,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.05934536627309086,
+        -0.024036076448617157
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.0003999200159968006,
+      "best_reference_uplift": 0.06467199388596091,
+      "sample_third_mean_better_rate": 0.2222222222222222,
+      "sample_any_third_better_rate": 0.8666666666666667,
+      "pair_third_mean_better_rate": 0.36,
+      "pair_any_third_better_rate": 0.7511111111111111
+    },
+    "rouge-2": {
+      "samples": 45,
+      "dimension_pairs": 225,
+      "first_person_mean": 0.08067626696829389,
+      "third_person_mean_reference": 0.055045345355372255,
+      "third_person_best_reference": 0.12430741320775265,
+      "mean_reference_uplift": -0.02563092161292159,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.039236954604325316,
+        -0.012604117473632484
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.0007998400319936012,
+      "best_reference_uplift": 0.043631146239458816,
+      "sample_third_mean_better_rate": 0.28888888888888886,
+      "sample_any_third_better_rate": 0.7777777777777778,
+      "pair_third_mean_better_rate": 0.4222222222222222,
+      "pair_any_third_better_rate": 0.7288888888888889
+    },
+    "rouge-l": {
+      "samples": 45,
+      "dimension_pairs": 225,
+      "first_person_mean": 0.2034272047015785,
+      "third_person_mean_reference": 0.17106288878785325,
+      "third_person_best_reference": 0.2541645577028182,
+      "mean_reference_uplift": -0.03236431591372523,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.04926435887182923,
+        -0.015683406149183076
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.0005998800239952009,
+      "best_reference_uplift": 0.05073735300123974,
+      "sample_third_mean_better_rate": 0.26666666666666666,
+      "sample_any_third_better_rate": 0.7777777777777778,
+      "pair_third_mean_better_rate": 0.37333333333333335,
+      "pair_any_third_better_rate": 0.7066666666666667
+    },
+    "bertscore": {
+      "samples": 45,
+      "dimension_pairs": 225,
+      "first_person_mean": 0.8849493535359698,
+      "third_person_mean_reference": 0.8808777405950757,
+      "third_person_best_reference": 0.8998293807771467,
+      "mean_reference_uplift": -0.004071612940894206,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.007145825756920665,
+        -0.0008675489955477956
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.014397120575884824,
+      "best_reference_uplift": 0.014880027241177027,
+      "sample_third_mean_better_rate": 0.35555555555555557,
+      "sample_any_third_better_rate": 0.8666666666666667,
+      "pair_third_mean_better_rate": 0.41333333333333333,
+      "pair_any_third_better_rate": 0.7866666666666666
+    }
+  },
+  "low_first_person_subset": {
+    "bleu": {
+      "samples": 12,
+      "dimension_pairs": 60,
+      "first_person_mean": 0.009865661235539985,
+      "third_person_mean_reference": 0.009454932957689738,
+      "third_person_best_reference": 0.04194291539238976,
+      "mean_reference_uplift": -0.0004107282778502487,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.013019771743087168,
+        0.009394643999798691
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.9664067186562687,
+      "best_reference_uplift": 0.032077254156849776,
+      "sample_third_mean_better_rate": 0.6666666666666666,
+      "sample_any_third_better_rate": 0.8333333333333334,
+      "pair_third_mean_better_rate": 0.36666666666666664,
+      "pair_any_third_better_rate": 0.4
+    },
+    "rouge-1": {
+      "samples": 12,
+      "dimension_pairs": 60,
+      "first_person_mean": 0.202852173720711,
+      "third_person_mean_reference": 0.21936248951189105,
+      "third_person_best_reference": 0.3169728828446789,
+      "mean_reference_uplift": 0.016510315791180116,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.011250554215883952,
+        0.04363497950423573
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.2669466106778644,
+      "best_reference_uplift": 0.11412070912396798,
+      "sample_third_mean_better_rate": 0.6666666666666666,
+      "sample_any_third_better_rate": 1.0,
+      "pair_third_mean_better_rate": 0.65,
+      "pair_any_third_better_rate": 0.9
+    },
+    "rouge-2": {
+      "samples": 12,
+      "dimension_pairs": 60,
+      "first_person_mean": 0.03905511713517507,
+      "third_person_mean_reference": 0.05368075413830245,
+      "third_person_best_reference": 0.11699707432639544,
+      "mean_reference_uplift": 0.014625637003127375,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        -0.005209450116815162,
+        0.03264191576352083
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.16296740651869626,
+      "best_reference_uplift": 0.07794195719122037,
+      "sample_third_mean_better_rate": 0.75,
+      "sample_any_third_better_rate": 0.9166666666666666,
+      "pair_third_mean_better_rate": 0.7333333333333333,
+      "pair_any_third_better_rate": 0.8833333333333333
+    },
+    "rouge-l": {
+      "samples": 12,
+      "dimension_pairs": 60,
+      "first_person_mean": 0.14155877354219468,
+      "third_person_mean_reference": 0.1661050808428595,
+      "third_person_best_reference": 0.24234904557080206,
+      "mean_reference_uplift": 0.024546307300664816,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        0.007842042172136505,
+        0.04162408071269194
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.021995600879824034,
+      "best_reference_uplift": 0.10079027202860734,
+      "sample_third_mean_better_rate": 0.6666666666666666,
+      "sample_any_third_better_rate": 1.0,
+      "pair_third_mean_better_rate": 0.7,
+      "pair_any_third_better_rate": 0.9166666666666666
+    },
+    "bertscore": {
+      "samples": 12,
+      "dimension_pairs": 60,
+      "first_person_mean": 0.8699188152949014,
+      "third_person_mean_reference": 0.8782748005787533,
+      "third_person_best_reference": 0.8955616722504299,
+      "mean_reference_uplift": 0.008355985283851628,
+      "mean_reference_uplift_bootstrap_95_ci": [
+        0.004926816821098338,
+        0.011729991038640336
+      ],
+      "mean_reference_two_sided_sign_flip_p": 0.0013997200559888023,
+      "best_reference_uplift": 0.025642856955528277,
+      "sample_third_mean_better_rate": 0.9166666666666666,
+      "sample_any_third_better_rate": 1.0,
+      "pair_third_mean_better_rate": 0.7166666666666667,
+      "pair_any_third_better_rate": 0.9166666666666666
+    }
+  },
+  "dimension": {
+    "bleu": {
+      "relevance": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.056117743908616124,
+          "third_person_mean_reference": 0.019491354095042476,
+          "third_person_best_reference": 0.06957761973413434,
+          "mean_reference_uplift": -0.03662638981357366,
+          "best_reference_uplift": 0.013459875825518209,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.4888888888888889
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.03409797767085279,
+          "third_person_mean_reference": 0.018226971681550432,
+          "third_person_best_reference": 0.08104692610167905,
+          "mean_reference_uplift": -0.01587100598930236,
+          "best_reference_uplift": 0.046948948430826254,
+          "third_mean_better_rate": 0.5,
+          "any_third_better_rate": 0.5833333333333334
+        }
+      },
+      "congruence": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.022901194052839066,
+          "third_person_mean_reference": 0.007065840897898465,
+          "third_person_best_reference": 0.03269442060755402,
+          "mean_reference_uplift": -0.015835353154940602,
+          "best_reference_uplift": 0.009793226554714957,
+          "third_mean_better_rate": 0.24444444444444444,
+          "any_third_better_rate": 0.28888888888888886
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.005066490530892933,
+          "third_person_mean_reference": 0.007884753829482106,
+          "third_person_best_reference": 0.03448275071406318,
+          "mean_reference_uplift": 0.0028182632985891726,
+          "best_reference_uplift": 0.029416260183170246,
+          "third_mean_better_rate": 0.4166666666666667,
+          "any_third_better_rate": 0.4166666666666667
+        }
+      },
+      "accountability": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.014996542204994048,
+          "third_person_mean_reference": 0.0030528182049432517,
+          "third_person_best_reference": 0.012863113318876724,
+          "mean_reference_uplift": -0.011943724000050795,
+          "best_reference_uplift": -0.0021334288861173255,
+          "third_mean_better_rate": 0.08888888888888889,
+          "any_third_better_rate": 0.08888888888888889
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.004718475486146877,
+          "third_person_mean_reference": 0.0023300022427774495,
+          "third_person_best_reference": 0.011650011213887248,
+          "mean_reference_uplift": -0.002388473243369428,
+          "best_reference_uplift": 0.0069315357277403705,
+          "third_mean_better_rate": 0.08333333333333333,
+          "any_third_better_rate": 0.08333333333333333
+        }
+      },
+      "control": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.023683148062034354,
+          "third_person_mean_reference": 0.008302797380054629,
+          "third_person_best_reference": 0.03569371908838817,
+          "mean_reference_uplift": -0.015380350681979725,
+          "best_reference_uplift": 0.012010571026353823,
+          "third_mean_better_rate": 0.3111111111111111,
+          "any_third_better_rate": 0.3333333333333333
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.005445362489807328,
+          "third_person_mean_reference": 0.008580805763182988,
+          "third_person_best_reference": 0.04290402881591493,
+          "mean_reference_uplift": 0.0031354432733756593,
+          "best_reference_uplift": 0.03745866632610761,
+          "third_mean_better_rate": 0.4166666666666667,
+          "any_third_better_rate": 0.5
+        }
+      },
+      "certainty": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.019567207575954745,
+          "third_person_mean_reference": 0.010133379322784068,
+          "third_person_best_reference": 0.04383492958948506,
+          "mean_reference_uplift": -0.009433828253170675,
+          "best_reference_uplift": 0.02426772201353031,
+          "third_mean_better_rate": 0.3333333333333333,
+          "any_third_better_rate": 0.4
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.0,
+          "third_person_mean_reference": 0.010252131271455698,
+          "third_person_best_reference": 0.03963086011640439,
+          "mean_reference_uplift": 0.010252131271455698,
+          "best_reference_uplift": 0.03963086011640439,
+          "third_mean_better_rate": 0.4166666666666667,
+          "any_third_better_rate": 0.4166666666666667
+        }
+      }
+    },
+    "rouge-1": {
+      "relevance": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.33717052189948343,
+          "third_person_mean_reference": 0.28460928955185055,
+          "third_person_best_reference": 0.38938339235932534,
+          "mean_reference_uplift": -0.05256123234763295,
+          "best_reference_uplift": 0.0522128704598418,
+          "third_mean_better_rate": 0.35555555555555557,
+          "any_third_better_rate": 0.7555555555555555
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.2637487513033001,
+          "third_person_mean_reference": 0.27166746579498413,
+          "third_person_best_reference": 0.37953890913274174,
+          "mean_reference_uplift": 0.00791871449168405,
+          "best_reference_uplift": 0.11579015782944165,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      },
+      "congruence": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.2495526418646691,
+          "third_person_mean_reference": 0.22390666125719041,
+          "third_person_best_reference": 0.3288730330047099,
+          "mean_reference_uplift": -0.025645980607478677,
+          "best_reference_uplift": 0.0793203911400408,
+          "third_mean_better_rate": 0.35555555555555557,
+          "any_third_better_rate": 0.7777777777777778
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.21345687967547178,
+          "third_person_mean_reference": 0.2194483050534276,
+          "third_person_best_reference": 0.31866173478076104,
+          "mean_reference_uplift": 0.00599142537795581,
+          "best_reference_uplift": 0.10520485510528932,
+          "third_mean_better_rate": 0.5,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "accountability": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.24375319228032907,
+          "third_person_mean_reference": 0.20331203695750075,
+          "third_person_best_reference": 0.3172262203094713,
+          "mean_reference_uplift": -0.04044115532282832,
+          "best_reference_uplift": 0.07347302802914224,
+          "third_mean_better_rate": 0.3333333333333333,
+          "any_third_better_rate": 0.7555555555555555
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.15079845186264648,
+          "third_person_mean_reference": 0.20024025230183606,
+          "third_person_best_reference": 0.30925104955516114,
+          "mean_reference_uplift": 0.049441800439189554,
+          "best_reference_uplift": 0.15845259769251463,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 1.0
+        }
+      },
+      "control": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.2815605953708105,
+          "third_person_mean_reference": 0.23513045069803695,
+          "third_person_best_reference": 0.3290624256451632,
+          "mean_reference_uplift": -0.046430144672773614,
+          "best_reference_uplift": 0.047501830274352584,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.7111111111111111
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.2209508699765597,
+          "third_person_mean_reference": 0.227602604997867,
+          "third_person_best_reference": 0.3119405987115846,
+          "mean_reference_uplift": 0.006651735021307329,
+          "best_reference_uplift": 0.09098972873502487,
+          "third_mean_better_rate": 0.6666666666666666,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "certainty": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.23794796404115937,
+          "third_person_mean_reference": 0.19399038883631164,
+          "third_person_best_reference": 0.30879981356758646,
+          "mean_reference_uplift": -0.043957575204847645,
+          "best_reference_uplift": 0.07085184952642706,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.7555555555555555
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.16530591578557688,
+          "third_person_mean_reference": 0.1778538194113407,
+          "third_person_best_reference": 0.26547212204314624,
+          "mean_reference_uplift": 0.012547903625763803,
+          "best_reference_uplift": 0.10016620625756932,
+          "third_mean_better_rate": 0.5833333333333334,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      }
+    },
+    "rouge-2": {
+      "relevance": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.12304386059183262,
+          "third_person_mean_reference": 0.08750441575946295,
+          "third_person_best_reference": 0.16648893072722695,
+          "mean_reference_uplift": -0.03553944483236972,
+          "best_reference_uplift": 0.043445070135394295,
+          "third_mean_better_rate": 0.4444444444444444,
+          "any_third_better_rate": 0.6444444444444445
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.07722475332354121,
+          "third_person_mean_reference": 0.08726120382633978,
+          "third_person_best_reference": 0.16567277143459772,
+          "mean_reference_uplift": 0.010036450502798574,
+          "best_reference_uplift": 0.08844801811105647,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      },
+      "congruence": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.06799944929634133,
+          "third_person_mean_reference": 0.04928660335023589,
+          "third_person_best_reference": 0.112363054402626,
+          "mean_reference_uplift": -0.018712845946105422,
+          "best_reference_uplift": 0.04436360510628467,
+          "third_mean_better_rate": 0.35555555555555557,
+          "any_third_better_rate": 0.7333333333333333
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.04097801427529852,
+          "third_person_mean_reference": 0.04511174903501986,
+          "third_person_best_reference": 0.09573672849762893,
+          "mean_reference_uplift": 0.004133734759721351,
+          "best_reference_uplift": 0.0547587142223304,
+          "third_mean_better_rate": 0.5833333333333334,
+          "any_third_better_rate": 0.75
+        }
+      },
+      "accountability": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.07071583055954503,
+          "third_person_mean_reference": 0.04837987444218421,
+          "third_person_best_reference": 0.11792039907097578,
+          "mean_reference_uplift": -0.022335956117360847,
+          "best_reference_uplift": 0.04720456851143075,
+          "third_mean_better_rate": 0.4666666666666667,
+          "any_third_better_rate": 0.7777777777777778
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.01879934016731472,
+          "third_person_mean_reference": 0.04688710128496292,
+          "third_person_best_reference": 0.11406164691392033,
+          "mean_reference_uplift": 0.028087761117648217,
+          "best_reference_uplift": 0.09526230674660562,
+          "third_mean_better_rate": 0.9166666666666666,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "control": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.07861315035193872,
+          "third_person_mean_reference": 0.04724317024101143,
+          "third_person_best_reference": 0.10736736534054647,
+          "mean_reference_uplift": -0.03136998011092733,
+          "best_reference_uplift": 0.028754214988607772,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.7111111111111111
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.04238461293549008,
+          "third_person_mean_reference": 0.04773287626901756,
+          "third_person_best_reference": 0.1106303875641511,
+          "mean_reference_uplift": 0.005348263333527466,
+          "best_reference_uplift": 0.06824577462866101,
+          "third_mean_better_rate": 0.6666666666666666,
+          "any_third_better_rate": 1.0
+        }
+      },
+      "certainty": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.06300904404181157,
+          "third_person_mean_reference": 0.042812662983966916,
+          "third_person_best_reference": 0.11739731649738822,
+          "mean_reference_uplift": -0.020196381057844652,
+          "best_reference_uplift": 0.054388272455576654,
+          "third_mean_better_rate": 0.4666666666666667,
+          "any_third_better_rate": 0.7777777777777778
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.015888864974230827,
+          "third_person_mean_reference": 0.041410840276172124,
+          "third_person_best_reference": 0.09888383722167916,
+          "mean_reference_uplift": 0.025521975301941294,
+          "best_reference_uplift": 0.08299497224744834,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      }
+    },
+    "rouge-l": {
+      "relevance": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.23724308100348385,
+          "third_person_mean_reference": 0.20568858000786905,
+          "third_person_best_reference": 0.28685594454407237,
+          "mean_reference_uplift": -0.03155450099561479,
+          "best_reference_uplift": 0.049612863540588456,
+          "third_mean_better_rate": 0.4444444444444444,
+          "any_third_better_rate": 0.6666666666666666
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.17443997137294354,
+          "third_person_mean_reference": 0.20207473510308951,
+          "third_person_best_reference": 0.2874685159326034,
+          "mean_reference_uplift": 0.027634763730145968,
+          "best_reference_uplift": 0.11302854455965987,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      },
+      "congruence": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.18512047889504543,
+          "third_person_mean_reference": 0.1581949553668647,
+          "third_person_best_reference": 0.23318110629065236,
+          "mean_reference_uplift": -0.026925523528180777,
+          "best_reference_uplift": 0.04806062739560687,
+          "third_mean_better_rate": 0.3111111111111111,
+          "any_third_better_rate": 0.6888888888888889
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.12921953970343353,
+          "third_person_mean_reference": 0.15268897506875537,
+          "third_person_best_reference": 0.21701735394311275,
+          "mean_reference_uplift": 0.02346943536532182,
+          "best_reference_uplift": 0.08779781423967924,
+          "third_mean_better_rate": 0.5833333333333334,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "accountability": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.1897025084395991,
+          "third_person_mean_reference": 0.1625868795291029,
+          "third_person_best_reference": 0.25711985448714886,
+          "mean_reference_uplift": -0.027115628910496174,
+          "best_reference_uplift": 0.06741734604754965,
+          "third_mean_better_rate": 0.4222222222222222,
+          "any_third_better_rate": 0.7777777777777778
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.12198736327561042,
+          "third_person_mean_reference": 0.1578779946224578,
+          "third_person_best_reference": 0.24470868522862663,
+          "mean_reference_uplift": 0.03589063134684736,
+          "best_reference_uplift": 0.12272132195301617,
+          "third_mean_better_rate": 0.75,
+          "any_third_better_rate": 1.0
+        }
+      },
+      "control": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.21898993473881884,
+          "third_person_mean_reference": 0.17953250867369874,
+          "third_person_best_reference": 0.25299250225051306,
+          "mean_reference_uplift": -0.03945742606512009,
+          "best_reference_uplift": 0.03400256751169417,
+          "third_mean_better_rate": 0.3111111111111111,
+          "any_third_better_rate": 0.7111111111111111
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.1656350999021343,
+          "third_person_mean_reference": 0.1766562378795499,
+          "third_person_best_reference": 0.2482992128704609,
+          "mean_reference_uplift": 0.011021137977415598,
+          "best_reference_uplift": 0.08266411296832657,
+          "third_mean_better_rate": 0.5833333333333334,
+          "any_third_better_rate": 1.0
+        }
+      },
+      "certainty": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.18608002043094507,
+          "third_person_mean_reference": 0.14931152036173082,
+          "third_person_best_reference": 0.24067338094170465,
+          "mean_reference_uplift": -0.03676850006921432,
+          "best_reference_uplift": 0.0545933605107596,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.6888888888888889
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.11651189345685153,
+          "third_person_mean_reference": 0.14122746154044483,
+          "third_person_best_reference": 0.21425145987920638,
+          "mean_reference_uplift": 0.024715568083593303,
+          "best_reference_uplift": 0.09773956642235483,
+          "third_mean_better_rate": 0.8333333333333334,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      }
+    },
+    "bertscore": {
+      "relevance": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.8891278094715542,
+          "third_person_mean_reference": 0.8866912566290963,
+          "third_person_best_reference": 0.9041968954934014,
+          "mean_reference_uplift": -0.0024365528424580975,
+          "best_reference_uplift": 0.015069086021847195,
+          "third_mean_better_rate": 0.4444444444444444,
+          "any_third_better_rate": 0.7777777777777778
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.8752152224381765,
+          "third_person_mean_reference": 0.8809669435024262,
+          "third_person_best_reference": 0.8967186460892359,
+          "mean_reference_uplift": 0.005751721064249667,
+          "best_reference_uplift": 0.021503423651059467,
+          "third_mean_better_rate": 0.6666666666666666,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "congruence": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.8848591181966994,
+          "third_person_mean_reference": 0.8825373548931545,
+          "third_person_best_reference": 0.8991286277770996,
+          "mean_reference_uplift": -0.002321763303544786,
+          "best_reference_uplift": 0.014269509580400255,
+          "third_mean_better_rate": 0.4666666666666667,
+          "any_third_better_rate": 0.8
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.8673846572637558,
+          "third_person_mean_reference": 0.8796163628498713,
+          "third_person_best_reference": 0.8961202849944433,
+          "mean_reference_uplift": 0.012231705586115518,
+          "best_reference_uplift": 0.028735627730687458,
+          "third_mean_better_rate": 0.8333333333333334,
+          "any_third_better_rate": 1.0
+        }
+      },
+      "accountability": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.8820934851964315,
+          "third_person_mean_reference": 0.8782506031460231,
+          "third_person_best_reference": 0.8981419152683682,
+          "mean_reference_uplift": -0.003842882050408266,
+          "best_reference_uplift": 0.016048430071936712,
+          "third_mean_better_rate": 0.4444444444444444,
+          "any_third_better_rate": 0.7333333333333333
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.8672598203023275,
+          "third_person_mean_reference": 0.8795736829439799,
+          "third_person_best_reference": 0.8993500371774038,
+          "mean_reference_uplift": 0.012313862641652426,
+          "best_reference_uplift": 0.032090216875076294,
+          "third_mean_better_rate": 0.8333333333333334,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "control": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.8875930468241374,
+          "third_person_mean_reference": 0.8809248243437874,
+          "third_person_best_reference": 0.8999729633331299,
+          "mean_reference_uplift": -0.006668222480350076,
+          "best_reference_uplift": 0.012379916508992513,
+          "third_mean_better_rate": 0.3333333333333333,
+          "any_third_better_rate": 0.8
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.8746671328941981,
+          "third_person_mean_reference": 0.8783825953801472,
+          "third_person_best_reference": 0.8976851056019465,
+          "mean_reference_uplift": 0.0037154624859492003,
+          "best_reference_uplift": 0.023017972707748413,
+          "third_mean_better_rate": 0.5833333333333334,
+          "any_third_better_rate": 0.9166666666666666
+        }
+      },
+      "certainty": {
+        "all_matched": {
+          "pairs": 45,
+          "first_person_mean": 0.8810733079910278,
+          "third_person_mean_reference": 0.8759846639633179,
+          "third_person_best_reference": 0.8977065020137363,
+          "mean_reference_uplift": -0.005088644027709963,
+          "best_reference_uplift": 0.016633194022708468,
+          "third_mean_better_rate": 0.37777777777777777,
+          "any_third_better_rate": 0.8222222222222222
+        },
+        "low_first_person": {
+          "pairs": 12,
+          "first_person_mean": 0.8650672435760498,
+          "third_person_mean_reference": 0.872834418217341,
+          "third_person_best_reference": 0.8879342873891195,
+          "mean_reference_uplift": 0.007767174641291295,
+          "best_reference_uplift": 0.02286704381306966,
+          "third_mean_better_rate": 0.6666666666666666,
+          "any_third_better_rate": 0.8333333333333334
+        }
+      }
+    }
+  },
+  "interpretation_guardrails": [
+    "A positive mean-reference uplift supports alignment with third-person annotator interpretations, not proof that grammatical perspective caused the original low score.",
+    "Selecting samples for low first-person similarity creates selection bias; report all_matched results alongside the low subset.",
+    "Best-reference scores are optimistic because they select the most favorable annotator; mean-reference is the primary result.",
+    "Lexical overlap metrics can penalize valid paraphrases; use BERTScore or human/rubric judging as a robustness analysis."
+  ]
+}

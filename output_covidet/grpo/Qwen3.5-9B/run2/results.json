@@ -1,0 +1,1487 @@
+{
+  "dataset": "CovidET-Appraisals",
+  "evaluation_scope": "21 source appraisal dimensions grouped into five dimensions, plus seven-label CovidET emotion prediction",
+  "coverage": {
+    "selected_samples": 241,
+    "valid_predictions": 239,
+    "evaluated_samples": 241,
+    "missing_samples": 2,
+    "penalized_missing_samples": 2,
+    "skipped_missing_samples": 0,
+    "missing_sample_ids": [
+      "covidet_oegz7y",
+      "covidet_oifgoe"
+    ],
+    "penalized_missing_sample_ids": [
+      "covidet_oegz7y",
+      "covidet_oifgoe"
+    ],
+    "sample_coverage": 0.991701244813278,
+    "metric_sample_coverage": 1.0,
+    "missing_prediction_policy": "penalize",
+    "allow_incomplete": false,
+    "penalty_defaults": {
+      "appraisal_rating": 5,
+      "appraisal_rationale": "",
+      "emotion_labels": []
+    },
+    "appraisal_item_count": 5061,
+    "expected_appraisal_item_count": 5061,
+    "emotion_item_count": 241,
+    "expected_emotion_item_count": 241
+  },
+  "metrics": {
+    "metric_definitions": {
+      "rating_gold": "mean of available non-NA human ratings for a source appraisal dimension",
+      "mae_and_spearman_scope": "gold/prediction pairs where both ratings are numeric",
+      "na_positive_class": true,
+      "rationale_multi_reference": true,
+      "bertscore_rescaled": true,
+      "emotion_gold": "union of available CovidET annotator labels"
+    },
+    "overall": {
+      "count": 5061,
+      "ratings": {
+        "mae": 1.9767587939698492,
+        "spearman": {
+          "correlation": 0.5185339684949105,
+          "p_value": 0.0,
+          "count": 4776,
+          "defined": true,
+          "reason": null
+        },
+        "numeric_pair_count": 4776,
+        "gold_numeric_count": 4776,
+        "predicted_numeric_count": 5061,
+        "coverage_on_gold_numeric": 1.0,
+        "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+      },
+      "na_detection": {
+        "positive_class": "NA",
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 285,
+        "predicted_positive": 0,
+        "confusion": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 285,
+          "true_negative": 4776
+        }
+      },
+      "rationales": {
+        "bleu_4": 0.012530639989744725,
+        "rouge_l": 0.13586629242056733,
+        "bertscore_rescaled": {
+          "precision": 0.2176699961728945,
+          "recall": 0.23057258996661298,
+          "f1": 0.22501354401039975
+        },
+        "item_count": 5061,
+        "multi_reference_item_count": 840,
+        "reference_policy": {
+          "bleu_4": "corpus BLEU-4 with all human references",
+          "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+          "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+        }
+      }
+    },
+    "macro_over_source_dimensions": {
+      "source_dimension_count": 21,
+      "ratings": {
+        "mae": 1.9804050150831694,
+        "spearman_correlation": 0.27437693336450364,
+        "defined_spearman_dimension_count": 21
+      },
+      "na_detection": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "rationales": {
+        "bleu_4": 0.01216165602696269,
+        "rouge_l": 0.13586629242056764,
+        "bertscore_rescaled": {
+          "precision": 0.21766999617289454,
+          "recall": 0.23057258996661298,
+          "f1": 0.22501354401039972
+        }
+      },
+      "aggregation": "unweighted mean across the 21 source appraisal dimensions"
+    },
+    "by_appraisal_dimension": {
+      "relevance": {
+        "count": 964,
+        "ratings": {
+          "mae": 2.2072649572649574,
+          "spearman": {
+            "correlation": 0.27675057621187377,
+            "p_value": 6.429974227819102e-18,
+            "count": 936,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 936,
+          "gold_numeric_count": 936,
+          "predicted_numeric_count": 964,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 28,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 28,
+            "true_negative": 936
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.013664419628748571,
+          "rouge_l": 0.13534742605855996,
+          "bertscore_rescaled": {
+            "precision": 0.17602434352400648,
+            "recall": 0.22363408332443274,
+            "f1": 0.20060416116548102
+          },
+          "item_count": 964,
+          "multi_reference_item_count": 160,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "epistemic": {
+        "count": 964,
+        "ratings": {
+          "mae": 2.1742160278745644,
+          "spearman": {
+            "correlation": 0.1839274606917193,
+            "p_value": 5.4629777219387256e-08,
+            "count": 861,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 861,
+          "gold_numeric_count": 861,
+          "predicted_numeric_count": 964,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 103,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 103,
+            "true_negative": 861
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.011488533668753824,
+          "rouge_l": 0.12239907381853438,
+          "bertscore_rescaled": {
+            "precision": 0.18927803179633193,
+            "recall": 0.2030628375569938,
+            "f1": 0.1972413977934265
+          },
+          "item_count": 964,
+          "multi_reference_item_count": 160,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "goal_congruence": {
+        "count": 723,
+        "ratings": {
+          "mae": 1.286873156342183,
+          "spearman": {
+            "correlation": 0.47439679451394823,
+            "p_value": 2.4129672455952965e-39,
+            "count": 678,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 678,
+          "gold_numeric_count": 678,
+          "predicted_numeric_count": 723,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 45,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 45,
+            "true_negative": 678
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.009071683513634871,
+          "rouge_l": 0.12171321455013527,
+          "bertscore_rescaled": {
+            "precision": 0.233269976281959,
+            "recall": 0.20507356019260395,
+            "f1": 0.22015043159748426
+          },
+          "item_count": 723,
+          "multi_reference_item_count": 120,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "agency_accountability": {
+        "count": 723,
+        "ratings": {
+          "mae": 2.00641940085592,
+          "spearman": {
+            "correlation": 0.46197352102000555,
+            "p_value": 2.370872391385048e-38,
+            "count": 701,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 701,
+          "gold_numeric_count": 701,
+          "predicted_numeric_count": 723,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 22,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 22,
+            "true_negative": 701
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.015933903261592795,
+          "rouge_l": 0.1834674849103771,
+          "bertscore_rescaled": {
+            "precision": 0.2647973311419971,
+            "recall": 0.2694736077227368,
+            "f1": 0.26777528753996227
+          },
+          "item_count": 723,
+          "multi_reference_item_count": 120,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "control_coping_potential": {
+        "count": 1687,
+        "ratings": {
+          "mae": 2.015,
+          "spearman": {
+            "correlation": 0.5675461586910504,
+            "p_value": 4.389659780836614e-137,
+            "count": 1600,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 1600,
+          "gold_numeric_count": 1600,
+          "predicted_numeric_count": 1687,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 87,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 87,
+            "true_negative": 1600
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.012194198991489097,
+          "rouge_l": 0.12952343470600194,
+          "bertscore_rescaled": {
+            "precision": 0.23080835658250898,
+            "recall": 0.24451360028959196,
+            "f1": 0.23858929013863214
+          },
+          "item_count": 1687,
+          "multi_reference_item_count": 280,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      }
+    },
+    "by_source_dimension": {
+      "dim5": {
+        "count": 241,
+        "ratings": {
+          "mae": 0.9754464285714286,
+          "spearman": {
+            "correlation": 0.23197462312020428,
+            "p_value": 0.000464694464896493,
+            "count": 224,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 224,
+          "gold_numeric_count": 224,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 17,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 17,
+            "true_negative": 224
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.018737907744188355,
+          "rouge_l": 0.14892873089274153,
+          "bertscore_rescaled": {
+            "precision": 0.21512326428906303,
+            "recall": 0.24223926685039432,
+            "f1": 0.22958759377668012
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim6": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.2680851063829786,
+          "spearman": {
+            "correlation": 0.03277108971878384,
+            "p_value": 0.617197021062776,
+            "count": 235,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 235,
+          "gold_numeric_count": 235,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 6,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 6,
+            "true_negative": 235
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.010848071085296097,
+          "rouge_l": 0.13587629138171026,
+          "bertscore_rescaled": {
+            "precision": 0.15796623328947984,
+            "recall": 0.18911706126020658,
+            "f1": 0.1745742957862158
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim12": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.563025210084034,
+          "spearman": {
+            "correlation": 0.29018908611948285,
+            "p_value": 5.3246668914855696e-06,
+            "count": 238,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 238,
+          "gold_numeric_count": 238,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 3,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 3,
+            "true_negative": 238
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.011412676511740367,
+          "rouge_l": 0.1270624495607032,
+          "bertscore_rescaled": {
+            "precision": 0.17098791405550856,
+            "recall": 0.22834356466918812,
+            "f1": 0.2003649732908181
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim19": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.9476987447698746,
+          "spearman": {
+            "correlation": 0.4018498585975325,
+            "p_value": 1.0894492464569213e-10,
+            "count": 239,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 239,
+          "gold_numeric_count": 239,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 2,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 2,
+            "true_negative": 239
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.013264808862251535,
+          "rouge_l": 0.1295222323990833,
+          "bertscore_rescaled": {
+            "precision": 0.16001996246197442,
+            "recall": 0.23483644051794195,
+            "f1": 0.19788978180821012
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim11": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.2905759162303663,
+          "spearman": {
+            "correlation": 0.12359183299902764,
+            "p_value": 0.08849366373475799,
+            "count": 191,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 191,
+          "gold_numeric_count": 191,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 50,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 50,
+            "true_negative": 191
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.010482899173329565,
+          "rouge_l": 0.10822720661868421,
+          "bertscore_rescaled": {
+            "precision": 0.1776562615812667,
+            "recall": 0.18357202307131776,
+            "f1": 0.1817409423222433
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim14": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.3059071729957807,
+          "spearman": {
+            "correlation": 0.19688781063357455,
+            "p_value": 0.002327702744292847,
+            "count": 237,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 237,
+          "gold_numeric_count": 237,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 4,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 4,
+            "true_negative": 237
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.012541150312320568,
+          "rouge_l": 0.1178791502546595,
+          "bertscore_rescaled": {
+            "precision": 0.19677948965439843,
+            "recall": 0.21455910842077366,
+            "f1": 0.20670293592504918
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim20": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.353881278538813,
+          "spearman": {
+            "correlation": -0.004270686157334855,
+            "p_value": 0.9498947209364844,
+            "count": 219,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 219,
+          "gold_numeric_count": 219,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 22,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 22,
+            "true_negative": 219
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.006928966661376842,
+          "rouge_l": 0.11207747036607535,
+          "bertscore_rescaled": {
+            "precision": 0.17316368118670472,
+            "recall": 0.194436916455441,
+            "f1": 0.18492053310035175
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim24": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.7406542056074767,
+          "spearman": {
+            "correlation": 0.20888339524581206,
+            "p_value": 0.0021280022997352205,
+            "count": 214,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 214,
+          "gold_numeric_count": 214,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 27,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 27,
+            "true_negative": 214
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.014879615996130467,
+          "rouge_l": 0.15141246803471597,
+          "bertscore_rescaled": {
+            "precision": 0.20951269476295786,
+            "recall": 0.21968330228044283,
+            "f1": 0.21560117982606175
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim13": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.069915254237288,
+          "spearman": {
+            "correlation": 0.5315648040981455,
+            "p_value": 1.2989447120016433e-18,
+            "count": 236,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 236,
+          "gold_numeric_count": 236,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 5,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 5,
+            "true_negative": 236
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.00734721624383299,
+          "rouge_l": 0.13660781205202005,
+          "bertscore_rescaled": {
+            "precision": 0.2523857863094364,
+            "recall": 0.231272860240825,
+            "f1": 0.2427559006820081
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim15": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.0952380952380953,
+          "spearman": {
+            "correlation": 0.5027231633299895,
+            "p_value": 3.372617072139314e-16,
+            "count": 231,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 231,
+          "gold_numeric_count": 231,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 10,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 10,
+            "true_negative": 231
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.011332138078562405,
+          "rouge_l": 0.12369113861594744,
+          "bertscore_rescaled": {
+            "precision": 0.24699200464304366,
+            "recall": 0.22294259092990787,
+            "f1": 0.23595296324103204
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim17": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.7393364928909953,
+          "spearman": {
+            "correlation": 0.46161337460392354,
+            "p_value": 1.5635780249917023e-12,
+            "count": 211,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 211,
+          "gold_numeric_count": 211,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 30,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 30,
+            "true_negative": 211
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.007713755187763915,
+          "rouge_l": 0.10484069298243724,
+          "bertscore_rescaled": {
+            "precision": 0.20043213789339692,
+            "recall": 0.16100522940707898,
+            "f1": 0.1817424308694126
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim1": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.506276150627615,
+          "spearman": {
+            "correlation": 0.4077592979591633,
+            "p_value": 5.4535814881129106e-11,
+            "count": 239,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 239,
+          "gold_numeric_count": 239,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 2,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 2,
+            "true_negative": 239
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.014669910091933119,
+          "rouge_l": 0.19525227773295617,
+          "bertscore_rescaled": {
+            "precision": 0.2500548791178962,
+            "recall": 0.2879620911051129,
+            "f1": 0.2695370812386398
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim2": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.68859649122807,
+          "spearman": {
+            "correlation": 0.23711510658842,
+            "p_value": 0.0003034545626917066,
+            "count": 228,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 228,
+          "gold_numeric_count": 228,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 13,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 13,
+            "true_negative": 228
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.017121146645995088,
+          "rouge_l": 0.17539881330363596,
+          "bertscore_rescaled": {
+            "precision": 0.2830646122009706,
+            "recall": 0.2797949197566855,
+            "f1": 0.2820060588264861
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim3": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.8525641025641026,
+          "spearman": {
+            "correlation": 0.21569451458930092,
+            "p_value": 0.0008969522188607379,
+            "count": 234,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 234,
+          "gold_numeric_count": 234,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 7,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 7,
+            "true_negative": 234
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.01587537709623029,
+          "rouge_l": 0.1797513636945373,
+          "bertscore_rescaled": {
+            "precision": 0.2612725021071245,
+            "recall": 0.24066381230641204,
+            "f1": 0.25178272255476086
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim4": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.1276150627615062,
+          "spearman": {
+            "correlation": 0.43126673079636535,
+            "p_value": 3.0290216806034743e-12,
+            "count": 239,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 239,
+          "gold_numeric_count": 239,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 2,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 2,
+            "true_negative": 239
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.01175183227578765,
+          "rouge_l": 0.1175592310199346,
+          "bertscore_rescaled": {
+            "precision": 0.2242769413314667,
+            "recall": 0.21727037610663913,
+            "f1": 0.2218183634253953
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim7": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.0513392857142856,
+          "spearman": {
+            "correlation": 0.36900463793664223,
+            "p_value": 1.2403825112739652e-08,
+            "count": 224,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 224,
+          "gold_numeric_count": 224,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 17,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 17,
+            "true_negative": 224
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.005269411163965766,
+          "rouge_l": 0.11284839898744327,
+          "bertscore_rescaled": {
+            "precision": 0.20209617062599333,
+            "recall": 0.21652922567552055,
+            "f1": 0.2103369788139193
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim8": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.6829787234042553,
+          "spearman": {
+            "correlation": 0.5440549977557577,
+            "p_value": 1.6610266598446926e-19,
+            "count": 235,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 235,
+          "gold_numeric_count": 235,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 6,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 6,
+            "true_negative": 235
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.020375960249423473,
+          "rouge_l": 0.16023464307878854,
+          "bertscore_rescaled": {
+            "precision": 0.29120375024332545,
+            "recall": 0.32781262241334835,
+            "f1": 0.3100844353932068
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim9": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.3963963963963963,
+          "spearman": {
+            "correlation": 0.24188008766249192,
+            "p_value": 0.00027502747894658016,
+            "count": 222,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 222,
+          "gold_numeric_count": 222,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 19,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 19,
+            "true_negative": 222
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.013045342201773032,
+          "rouge_l": 0.14753035255980723,
+          "bertscore_rescaled": {
+            "precision": 0.2477884602991872,
+            "recall": 0.279009434135623,
+            "f1": 0.26416112708229245
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim10": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.4322033898305084,
+          "spearman": {
+            "correlation": 0.23431864969121993,
+            "p_value": 0.00028205962909167586,
+            "count": 236,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 236,
+          "gold_numeric_count": 236,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 5,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 5,
+            "true_negative": 236
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.010415839259158238,
+          "rouge_l": 0.14095233887101782,
+          "bertscore_rescaled": {
+            "precision": 0.2296954261919646,
+            "recall": 0.22635811072662163,
+            "f1": 0.22902653131371217
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim21": {
+        "count": 241,
+        "ratings": {
+          "mae": 2.869767441860465,
+          "spearman": {
+            "correlation": 0.04415694972184059,
+            "p_value": 0.5195704121396991,
+            "count": 215,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 215,
+          "gold_numeric_count": 215,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 26,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 26,
+            "true_negative": 215
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.01002123544950699,
+          "rouge_l": 0.11467816139717225,
+          "bertscore_rescaled": {
+            "precision": 0.19980400228772421,
+            "recall": 0.2151384808246773,
+            "f1": 0.20853233260114162
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      },
+      "dim22": {
+        "count": 241,
+        "ratings": {
+          "mae": 1.6310043668122272,
+          "spearman": {
+            "correlation": 0.05888627564423236,
+            "p_value": 0.3750764010915228,
+            "count": 229,
+            "defined": true,
+            "reason": null
+          },
+          "numeric_pair_count": 229,
+          "gold_numeric_count": 229,
+          "predicted_numeric_count": 241,
+          "coverage_on_gold_numeric": 1.0,
+          "note": "MAE and Spearman use only pairs where both gold and prediction are numeric. NA behavior is scored separately."
+        },
+        "na_detection": {
+          "positive_class": "NA",
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 12,
+          "predicted_positive": 0,
+          "confusion": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 12,
+            "true_negative": 229
+          }
+        },
+        "rationales": {
+          "bleu_4": 0.011359516275649724,
+          "rouge_l": 0.11286091702784896,
+          "bertscore_rescaled": {
+            "precision": 0.2207937450979013,
+            "recall": 0.2294769521447138,
+            "f1": 0.22616526234075737
+          },
+          "item_count": 241,
+          "multi_reference_item_count": 40,
+          "reference_policy": {
+            "bleu_4": "corpus BLEU-4 with all human references",
+            "rouge_l": "mean of per-item best-reference ROUGE-L F1",
+            "bertscore_rescaled": "mean of per-item best-reference rescaled BERTScore"
+          }
+        }
+      }
+    },
+    "emotion": {
+      "label_space": [
+        "anger",
+        "anticipation",
+        "disgust",
+        "fear",
+        "joy",
+        "sadness",
+        "trust"
+      ],
+      "gold_aggregation": "union_of_annotators",
+      "samples": 241,
+      "example_precision": 0.6663208852005533,
+      "example_recall": 0.6701936376210237,
+      "example_f1": 0.6276888625436349,
+      "micro_precision": 0.636650868878357,
+      "micro_recall": 0.6336477987421384,
+      "micro_f1": 0.6351457840819543,
+      "macro_precision": 0.6213375338258311,
+      "macro_recall": 0.55403223648438,
+      "macro_f1": 0.5078559860552196,
+      "exact_match": 0.0912863070539419,
+      "micro_confusion": {
+        "true_positive": 403,
+        "false_positive": 230,
+        "false_negative": 233
+      },
+      "per_label": {
+        "anger": {
+          "precision": 0.5357142857142857,
+          "recall": 0.8064516129032258,
+          "f1": 0.6437768240343347,
+          "support": 93,
+          "predicted_positive": 140,
+          "confusion": {
+            "tp": 75,
+            "fp": 65,
+            "fn": 18,
+            "tn": 83
+          }
+        },
+        "anticipation": {
+          "precision": 0.47058823529411764,
+          "recall": 0.14814814814814814,
+          "f1": 0.22535211267605632,
+          "support": 108,
+          "predicted_positive": 34,
+          "confusion": {
+            "tp": 16,
+            "fp": 18,
+            "fn": 92,
+            "tn": 115
+          }
+        },
+        "disgust": {
+          "precision": 0.3448275862068966,
+          "recall": 0.6060606060606061,
+          "f1": 0.43956043956043955,
+          "support": 33,
+          "predicted_positive": 58,
+          "confusion": {
+            "tp": 20,
+            "fp": 38,
+            "fn": 13,
+            "tn": 170
+          }
+        },
+        "fear": {
+          "precision": 0.8026905829596412,
+          "recall": 0.9572192513368984,
+          "f1": 0.873170731707317,
+          "support": 187,
+          "predicted_positive": 223,
+          "confusion": {
+            "tp": 179,
+            "fp": 44,
+            "fn": 8,
+            "tn": 10
+          }
+        },
+        "joy": {
+          "precision": 1.0,
+          "recall": 0.13846153846153847,
+          "f1": 0.24324324324324326,
+          "support": 65,
+          "predicted_positive": 9,
+          "confusion": {
+            "tp": 9,
+            "fp": 0,
+            "fn": 56,
+            "tn": 176
+          }
+        },
+        "sadness": {
+          "precision": 0.624113475177305,
+          "recall": 0.9361702127659575,
+          "f1": 0.7489361702127659,
+          "support": 94,
+          "predicted_positive": 141,
+          "confusion": {
+            "tp": 88,
+            "fp": 53,
+            "fn": 6,
+            "tn": 94
+          }
+        },
+        "trust": {
+          "precision": 0.5714285714285714,
+          "recall": 0.2857142857142857,
+          "f1": 0.38095238095238093,
+          "support": 56,
+          "predicted_positive": 28,
+          "confusion": {
+            "tp": 16,
+            "fp": 12,
+            "fn": 40,
+            "tn": 173
+          }
+        }
+      }
+    }
+  }
+}

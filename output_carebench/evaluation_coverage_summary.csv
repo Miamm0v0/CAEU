@@ -1,0 +1,15 @@
+method,model,run_scope,inference_mode,expected_run_samples,evaluation_gold_total,appraisal_reasoning_pred_total,other_tasks_pred_total,missing_pred_samples,requested_run_completion,evaluation_gold_coverage,coverage_status,result_file
+baseline,Qwen3.5-9B,run_100samples,separate-tasks,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3.5-9B/run_100samples/results_all.json
+baseline,Qwen3.5-9B,run_100samples,full-chain,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3.5-9B/run_100samples/results_full-chain.json
+baseline,Qwen3.5-9B,run_200samples,separate-tasks,200,200,200,200,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3.5-9B/run_200samples/results_all.json
+baseline,Qwen3.5-9B,run_200samples,full-chain,200,200,200,200,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3.5-9B/run_200samples/results_full-chain.json
+baseline,Qwen3.5-9B,run_all,separate-tasks,1000,1000,1000,1000,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3.5-9B/run_all/results_all.json
+baseline,Qwen3-4B-Instruct-2507,run_100samples,separate-tasks,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3-4B-Instruct-2507/run_100samples/results_all.json
+baseline,Qwen3-4B-Instruct-2507,run_100samples,full-chain,100,100,94,94,6,0.940000,0.940000,partial_prediction_coverage,output/baseline/Qwen3-4B-Instruct-2507/run_100samples/results_full-chain.json
+baseline,Qwen3-4B-Instruct-2507,run_200samples,separate-tasks,200,200,200,200,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3-4B-Instruct-2507/run_200samples/results_all.json
+baseline,Qwen3-4B-Instruct-2507,run_200samples,full-chain,200,200,178,178,22,0.890000,0.890000,partial_prediction_coverage,output/baseline/Qwen3-4B-Instruct-2507/run_200samples/results_full-chain.json
+baseline,Qwen3-4B-Instruct-2507,run_all,separate-tasks,1000,1000,1000,1000,0,1.000000,1.000000,full_gold_coverage,output/baseline/Qwen3-4B-Instruct-2507/run_all/results_all.json
+sft-chain,Qwen3-4B-Instruct-2507,run_100samples,separate-tasks,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/sft/sft-chain/Qwen3-4B-Instruct-2507/run_100samples/results_all.json
+sft-chain,Qwen3-4B-Instruct-2507,run_100samples,full-chain,100,100,99,99,1,0.990000,0.990000,partial_prediction_coverage,output/sft/sft-chain/Qwen3-4B-Instruct-2507/run_100samples/results_full-chain.json
+sft-direct,Qwen3-4B-Instruct-2507,run_100samples,separate-tasks,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/sft/sft-direct/Qwen3-4B-Instruct-2507/run_100samples/results_all.json
+sft-direct,Qwen3-4B-Instruct-2507,run_100samples,full-chain,100,100,100,100,0,1.000000,1.000000,full_gold_coverage,output/sft/sft-direct/Qwen3-4B-Instruct-2507/run_100samples/results_full-chain.json

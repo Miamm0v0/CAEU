@@ -1,0 +1,10 @@
+﻿metric,value
+selected_low_samples,12
+selection_metric,bertscore
+low_subset_first_person_mean,0.8649894565343857
+low_subset_third_person_mean_reference,0.872487955292066
+low_subset_mean_reference_uplift,0.007498498757680254
+low_subset_mean_reference_uplift_95_ci,"[0.003907456596692384, 0.010684319535891218]"
+low_subset_mean_reference_sign_flip_p,0.003599280143971206
+low_subset_third_mean_better_sample_rate,0.8333333333333334
+all_samples_mean_reference_uplift,-0.00034051206376816995
