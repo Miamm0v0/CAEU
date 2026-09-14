@@ -220,6 +220,39 @@ def select_free_emotion(emotion: Mapping[str, Any]) -> tuple[str, dict[str, Any]
     }
 
 
+def select_valence_constrained_emotion(
+    emotion: Mapping[str, Any],
+    allowed_emotions: Iterable[str],
+) -> tuple[str, dict[str, Any]]:
+    """Select the first ranked label from CHIARO's target-valence candidates."""
+    allowed = {
+        label
+        for raw_label in allowed_emotions
+        if (label := normalize_emotion(raw_label)) is not None
+    }
+    if allowed and allowed.issubset(POSITIVE_EMOTIONS):
+        selected_valence = "positive"
+        ranked_labels = list(emotion["positive_labels"])
+    elif allowed and allowed.issubset(NEGATIVE_EMOTIONS):
+        selected_valence = "negative"
+        ranked_labels = list(emotion["negative_labels"])
+    else:
+        raise ValueError(
+            "CHIARO constrained options must contain labels from one valence only"
+        )
+    eligible_labels = [label for label in ranked_labels if label in allowed]
+    if not eligible_labels:
+        raise ValueError(
+            f"Model output has no {selected_valence} label for the CHIARO target valence"
+        )
+    selected_label = eligible_labels[0]
+    return selected_label, {
+        "rule": "chiaro-target-valence-then-first-ranked-label",
+        "selected_valence": selected_valence,
+        "selected_label": selected_label,
+    }
+
+
 def parse_constrained_emotion(value: Any, allowed: Iterable[str]) -> dict[str, str]:
     if not isinstance(value, dict) or set(value) != {"label"}:
         raise ValueError("emotion must contain exactly one key: label")

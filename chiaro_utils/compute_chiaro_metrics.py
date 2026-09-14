@@ -309,7 +309,7 @@ def build_report(
     }
     free_diagnostics = _free_emotion_diagnostics(matched_records)
     if free_diagnostics is not None:
-        report["valence_free_diagnostics"] = free_diagnostics
+        report["carebench_emotion_diagnostics"] = free_diagnostics
     return report
 
 
