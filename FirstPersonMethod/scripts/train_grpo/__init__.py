@@ -1,0 +1,27 @@
+"""GRPO training package for first-person appraisal-chain policies."""
+
+from .spec import (
+    APPRAISAL_CRITERIA,
+    APPRAISAL_DEFINITIONS,
+    APPRAISAL_DIMENSIONS,
+    CAREBENCH_REASONING_KEYS,
+    COHERENCE_CRITERION,
+    DIMENSION_VALIDITY_GUIDANCE,
+    PROCESS_CRITERIA,
+    RUBRIC_VERSION,
+    TRANSITION_CRITERION,
+    resolve_appraisal_dimensions,
+)
+
+__all__ = [
+    "APPRAISAL_CRITERIA",
+    "APPRAISAL_DEFINITIONS",
+    "APPRAISAL_DIMENSIONS",
+    "CAREBENCH_REASONING_KEYS",
+    "COHERENCE_CRITERION",
+    "DIMENSION_VALIDITY_GUIDANCE",
+    "PROCESS_CRITERIA",
+    "RUBRIC_VERSION",
+    "TRANSITION_CRITERION",
+    "resolve_appraisal_dimensions",
+]

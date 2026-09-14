@@ -13,6 +13,9 @@ LoRA training example (run from the workspace root):
     --model_name_or_path Qwen/Qwen2.5-7B-Instruct \
     --train_file train.json \
     --eval_file dev.json \
+    --use_wandb \
+    --wandb_project first-person-appraisal-sft \
+    --run_name direct-sft \
     --output_dir FirstPersonMethod/output/direct_sft
 """
 
@@ -31,4 +34,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

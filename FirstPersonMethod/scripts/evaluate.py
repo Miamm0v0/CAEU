@@ -42,12 +42,12 @@ except ImportError:
 
 
 TASKS = [
-    # "appraisals",
+    "appraisals",
     "positive-level",
     "negative-level",
     "positive-labels",
     "negative-labels",
-    # "core-appraisals",
+    "core-appraisals",
 ]
 
 CORE_APPRAISAL_DIMENSIONS = [
@@ -255,7 +255,7 @@ def evaluate_core_appraisals(
             bertscore_device = "cpu"
             if torch is not None and torch.cuda.is_available():
                 bertscore_device = "cuda"
-            bert_scorer = BERTScorer(lang="en", device=bertscore_device)
+            bert_scorer = BERTScorer(model_type="/data/liyanhong/model/roberta-large", num_layers=17, lang="en", device=bertscore_device)
         except Exception as exc:
             warnings.append(f"BERTScorer init failed: {exc}")
             bert_scorer = None

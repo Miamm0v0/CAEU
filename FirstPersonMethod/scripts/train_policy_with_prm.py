@@ -53,10 +53,9 @@ from sft_common import (
     APPRAISAL_KEY_MAP,
     CHAIN_SYSTEM_PROMPT,
     CORE_APPRAISAL_ORDER,
-    NEGATIVE_LABELS,
-    POSITIVE_LABELS,
     build_chain_example,
     build_chain_user_prompt,
+    canonicalize_emotion_labels,
 )
 from train_prm import DEFAULT_PRM_PROMPT
 
@@ -532,17 +531,6 @@ def require_bounded_int(value: Any, minimum: int, maximum: int, location: str) -
     return value
 
 
-def require_label_list(value: Any, allowed: Sequence[str], location: str) -> list[str]:
-    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-        raise ValueError(f"{location} must be a list of strings")
-    if len(value) != len(set(value)):
-        raise ValueError(f"{location} must not contain duplicate labels")
-    invalid = [item for item in value if item not in allowed]
-    if invalid:
-        raise ValueError(f"{location} contains invalid labels: {invalid}")
-    return value
-
-
 def parse_policy_chain(text: str) -> dict[str, Any]:
     stripped = text.strip()
     if not stripped:
@@ -579,11 +567,17 @@ def parse_policy_chain(text: str) -> dict[str, Any]:
     require_bounded_int(
         emotion["negative_intensity"], 0, 6, "emotion.negative_intensity"
     )
-    require_label_list(
-        emotion["positive_labels"], POSITIVE_LABELS, "emotion.positive_labels"
+    emotion["positive_labels"] = canonicalize_emotion_labels(
+        emotion["positive_labels"],
+        "positive",
+        field="emotion.positive_labels",
+        reject_duplicates=False,
     )
-    require_label_list(
-        emotion["negative_labels"], NEGATIVE_LABELS, "emotion.negative_labels"
+    emotion["negative_labels"] = canonicalize_emotion_labels(
+        emotion["negative_labels"],
+        "negative",
+        field="emotion.negative_labels",
+        reject_duplicates=False,
     )
     return payload
 

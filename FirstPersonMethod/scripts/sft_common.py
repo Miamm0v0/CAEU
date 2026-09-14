@@ -52,7 +52,11 @@ APPRAISAL_KEY_MAP = [
     ("E4_accountability_fairness", "accountability.fairness"),
 ]
 
-POSITIVE_LABEL_MAP = {
+# CAREBench's comma-separated phrases describe synonym groups; they are not
+# literal class names. Policy/SFT/GRPO JSON uses the short lowercase IDs below.
+# The descriptions are shown in prompts and are used only at the boundary where
+# benchmark-compatible task files require the original group text.
+POSITIVE_LABEL_DESCRIPTIONS = {
     "hopeful": "Hopeful, optimistic, encouraged",
     "grateful": "Grateful, appreciative, thankful",
     "glad": "Glad, happy, joyful",
@@ -65,13 +69,12 @@ POSITIVE_LABEL_MAP = {
     "excited": "Excited, enthusiastic, elated",
 }
 
-NEGATIVE_LABEL_MAP = {
+NEGATIVE_LABEL_DESCRIPTIONS = {
     "angry": "Angry, frustrated, annoyed",
     "worried": "Worried, nervous, fearful",
     "sad": "Sad, downhearted, unhappy",
     "disgust": "Disgust, distaste, revulsion",
     "despair": "Despair, hopelessness, sorrow",
-    "sorrow": "Despair, hopelessness, sorrow",
     "ashamed": "Ashamed, humiliated, embarrassed",
     "lonely": "Lonely, isolated, disconnected from others",
     "panicked": "Panicked, alarmed, freaked out",
@@ -79,11 +82,25 @@ NEGATIVE_LABEL_MAP = {
     "confused": "Confused, disoriented, surprised",
 }
 
-POSITIVE_LABELS = list(POSITIVE_LABEL_MAP.values())
-NEGATIVE_LABELS = []
-for _label in NEGATIVE_LABEL_MAP.values():
-    if _label not in NEGATIVE_LABELS:
-        NEGATIVE_LABELS.append(_label)
+POSITIVE_LABELS = list(POSITIVE_LABEL_DESCRIPTIONS)
+NEGATIVE_LABELS = list(NEGATIVE_LABEL_DESCRIPTIONS)
+
+
+def _build_label_alias_map(descriptions):
+    aliases = {}
+    for canonical, description in descriptions.items():
+        aliases[canonical.casefold()] = canonical
+        for synonym in description.split(","):
+            normalized = synonym.strip().casefold()
+            if normalized:
+                aliases[normalized] = canonical
+    return aliases
+
+
+# These maps normalize a canonical ID or one synonym to the canonical ID.
+# For example: Hopeful/optimistic/encouraged -> hopeful and sorrow -> despair.
+POSITIVE_LABEL_MAP = _build_label_alias_map(POSITIVE_LABEL_DESCRIPTIONS)
+NEGATIVE_LABEL_MAP = _build_label_alias_map(NEGATIVE_LABEL_DESCRIPTIONS)
 
 DIRECT_SYSTEM_PROMPT = (
     "You infer the emotions experienced by the first-person author immediately "
@@ -99,8 +116,17 @@ CHAIN_SYSTEM_PROMPT = (
 )
 
 
-def _label_lines(values):
-    return "\n".join("- " + value for value in values)
+def emotion_label_option_lines(valence):
+    if valence == "positive":
+        descriptions = POSITIVE_LABEL_DESCRIPTIONS
+    elif valence == "negative":
+        descriptions = NEGATIVE_LABEL_DESCRIPTIONS
+    else:
+        raise ValueError("valence must be 'positive' or 'negative'")
+    return "\n".join(
+        "- {}: {}".format(canonical, description)
+        for canonical, description in descriptions.items()
+    )
 
 
 def build_direct_user_prompt(situation):
@@ -116,15 +142,15 @@ Return a JSON object with exactly these fields:
 - positive_labels: zero or more labels from the positive list
 - negative_labels: zero or more labels from the negative list
 
-Positive labels:
+Positive emotion groups (the ID or any one comma-separated synonym is valid):
 {positive_labels}
 
-Negative labels:
+Negative emotion groups (the ID or any one comma-separated synonym is valid):
 {negative_labels}
 """.format(
         situation=situation,
-        positive_labels=_label_lines(POSITIVE_LABELS),
-        negative_labels=_label_lines(NEGATIVE_LABELS),
+        positive_labels=emotion_label_option_lines("positive"),
+        negative_labels=emotion_label_option_lines("negative"),
     ).strip()
 
 
@@ -147,10 +173,10 @@ Use exactly these appraisal_ratings keys:
 Emotion intensity must be an integer from 0 to 6. Emotion labels must come only
 from these lists.
 
-Positive labels:
+Positive emotion groups (the ID or any one comma-separated synonym is valid):
 {positive_labels}
 
-Negative labels:
+Negative emotion groups (the ID or any one comma-separated synonym is valid):
 {negative_labels}
 
 Return exactly this top-level structure:
@@ -167,8 +193,8 @@ Return exactly this top-level structure:
 """.format(
         situation=situation,
         rating_keys="\n".join("- " + key for key in rating_keys),
-        positive_labels=_label_lines(POSITIVE_LABELS),
-        negative_labels=_label_lines(NEGATIVE_LABELS),
+        positive_labels=emotion_label_option_lines("positive"),
+        negative_labels=emotion_label_option_lines("negative"),
     ).strip()
 
 
@@ -190,23 +216,46 @@ def _require_int(value, minimum, maximum, record_id, field):
     return value
 
 
-def _canonicalize_labels(raw_labels, mapping, allowed, record_id, field):
+def canonicalize_emotion_labels(
+    raw_labels,
+    valence,
+    record_id="<unknown>",
+    field="emotion.labels",
+    reject_duplicates=False,
+):
     if not isinstance(raw_labels, list):
         raise ValueError("{}: {} must be an array".format(record_id, field))
 
-    selected = set()
+    if valence == "positive":
+        mapping = POSITIVE_LABEL_MAP
+        allowed = POSITIVE_LABELS
+    elif valence == "negative":
+        mapping = NEGATIVE_LABEL_MAP
+        allowed = NEGATIVE_LABELS
+    else:
+        raise ValueError("valence must be 'positive' or 'negative'")
+
+    normalized_labels = []
     for raw_label in raw_labels:
         if not isinstance(raw_label, str):
             raise ValueError("{}: {} contains a non-string label".format(record_id, field))
-        label = raw_label.strip()
-        if label in allowed:
-            selected.add(label)
-        elif label.lower() in mapping:
-            selected.add(mapping[label.lower()])
-        else:
+        alias = raw_label.strip().casefold()
+        if alias not in mapping:
             raise ValueError(
                 "{}: unknown label {!r} in {}".format(record_id, raw_label, field)
             )
+        normalized_labels.append(mapping[alias])
+
+    if reject_duplicates and len(normalized_labels) != len(
+        set(normalized_labels)
+    ):
+        raise ValueError(
+            "{}: {} contains duplicate emotion groups after normalization".format(
+                record_id,
+                field,
+            )
+        )
+    selected = set(normalized_labels)
     return [label for label in allowed if label in selected]
 
 
@@ -223,19 +272,17 @@ def normalize_emotion(record):
         "negative_intensity": _require_int(
             emotion.get("negative_intensity"), 0, 6, record_id, "emotion.negative_intensity"
         ),
-        "positive_labels": _canonicalize_labels(
+        "positive_labels": canonicalize_emotion_labels(
             emotion.get("positive_labels"),
-            POSITIVE_LABEL_MAP,
-            POSITIVE_LABELS,
-            record_id,
-            "emotion.positive_labels",
+            "positive",
+            record_id=record_id,
+            field="emotion.positive_labels",
         ),
-        "negative_labels": _canonicalize_labels(
+        "negative_labels": canonicalize_emotion_labels(
             emotion.get("negative_labels"),
-            NEGATIVE_LABEL_MAP,
-            NEGATIVE_LABELS,
-            record_id,
-            "emotion.negative_labels",
+            "negative",
+            record_id=record_id,
+            field="emotion.negative_labels",
         ),
     }
 
@@ -608,6 +655,71 @@ def add_common_arguments(parser, default_output_dir, default_max_length):
         help="'none' or comma-separated integrations such as wandb,tensorboard",
     )
     parser.add_argument("--run_name", type=str, default="")
+    parser.add_argument(
+        "--use_wandb",
+        action="store_true",
+        help="Enable the Transformers W&B callback (also implied by W&B options)",
+    )
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default="",
+        help="W&B project; otherwise WANDB_PROJECT or the W&B default is used",
+    )
+    parser.add_argument(
+        "--wandb_entity",
+        type=str,
+        default="",
+        help="Optional W&B user or team entity",
+    )
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default="",
+        help="Group related SFT runs, for example direct and chain ablations",
+    )
+    parser.add_argument(
+        "--wandb_tags",
+        type=str,
+        default="",
+        help="Comma-separated W&B tags",
+    )
+    parser.add_argument(
+        "--wandb_notes",
+        type=str,
+        default="",
+        help="Optional W&B run notes",
+    )
+    parser.add_argument(
+        "--wandb_mode",
+        choices=["online", "offline"],
+        default=None,
+        help="Override WANDB_MODE; offline logs locally without syncing",
+    )
+    parser.add_argument(
+        "--wandb_log_model",
+        choices=["false", "end", "checkpoint"],
+        default=None,
+        help="Upload no model, the final model, or every checkpoint as Artifacts",
+    )
+    parser.add_argument(
+        "--wandb_watch",
+        choices=["false", "gradients", "parameters", "all"],
+        default=None,
+        help="Optional parameter/gradient histogram logging; may add overhead",
+    )
+    parser.add_argument(
+        "--wandb_run_id",
+        type=str,
+        default="",
+        help="Existing W&B run id when resuming the same tracked run",
+    )
+    parser.add_argument(
+        "--wandb_resume",
+        choices=["never", "allow", "must", "auto"],
+        default=None,
+        help="W&B resume policy; a run id without this flag defaults to allow",
+    )
     parser.add_argument("--dataset_num_proc", type=int, default=None)
     parser.add_argument("--resume_from_checkpoint", type=str, default="")
     parser.add_argument("--max_train_samples", type=int, default=None)
@@ -628,7 +740,7 @@ def add_common_arguments(parser, default_output_dir, default_max_length):
     return parser
 
 
-def _import_training_stack(load_in_4bit):
+def _import_training_stack(load_in_4bit, use_wandb=False):
     if sys.version_info < (3, 10):
         raise RuntimeError(
             "Training requires Python >= 3.10 for the current TRL/Transformers stack; "
@@ -654,6 +766,14 @@ def _import_training_stack(load_in_4bit):
         except ImportError as exc:
             raise RuntimeError(
                 "--load_in_4bit requires bitsandbytes: pip install bitsandbytes"
+            ) from exc
+
+    if use_wandb:
+        try:
+            import wandb  # noqa: F401
+        except ImportError as exc:
+            raise RuntimeError(
+                "W&B logging requires wandb: pip install wandb"
             ) from exc
 
     return {
@@ -685,8 +805,113 @@ def _resolve_dtype(torch, requested):
 def _parse_report_to(value):
     cleaned = value.strip()
     if not cleaned or cleaned.lower() == "none":
-        return "none"
+        return []
     return [part.strip() for part in cleaned.split(",") if part.strip()]
+
+
+def _wandb_requested(args, reporters):
+    configured_values = (
+        args.wandb_project,
+        args.wandb_entity,
+        args.wandb_group,
+        args.wandb_tags,
+        args.wandb_notes,
+        args.wandb_mode,
+        args.wandb_log_model,
+        args.wandb_watch,
+        args.wandb_run_id,
+        args.wandb_resume,
+    )
+    return (
+        args.use_wandb
+        or any(reporter.lower() == "wandb" for reporter in reporters)
+        or any(value not in (None, "") for value in configured_values)
+    )
+
+
+def _resolve_reporters(args):
+    reporters = _parse_report_to(args.report_to)
+    if _wandb_requested(args, reporters) and not any(
+        reporter.lower() == "wandb" for reporter in reporters
+    ):
+        reporters.append("wandb")
+    return reporters
+
+
+def _configure_wandb(args, reporters, method_name):
+    """Configure the Trainer-managed W&B run without handling API keys."""
+    enabled = any(reporter.lower() == "wandb" for reporter in reporters)
+    if not enabled:
+        return {"enabled": False}
+
+    cli_environment = {
+        "WANDB_PROJECT": args.wandb_project.strip(),
+        "WANDB_ENTITY": args.wandb_entity.strip(),
+        "WANDB_RUN_GROUP": args.wandb_group.strip(),
+        "WANDB_TAGS": ",".join(
+            tag.strip() for tag in args.wandb_tags.split(",") if tag.strip()
+        ),
+        "WANDB_NOTES": args.wandb_notes.strip(),
+        "WANDB_MODE": args.wandb_mode or "",
+        "WANDB_LOG_MODEL": args.wandb_log_model or "",
+        "WANDB_WATCH": args.wandb_watch or "",
+        "WANDB_RUN_ID": args.wandb_run_id.strip(),
+    }
+    for variable, value in cli_environment.items():
+        if value:
+            os.environ[variable] = value
+
+    existing_run_id = os.environ.get("WANDB_RUN_ID", "").strip()
+    if args.wandb_resume in ("allow", "must") and not existing_run_id:
+        raise ValueError(
+            "--wandb_resume {} requires --wandb_run_id or WANDB_RUN_ID".format(
+                args.wandb_resume
+            )
+        )
+    if args.wandb_resume:
+        os.environ["WANDB_RESUME"] = args.wandb_resume
+    elif args.wandb_run_id and "WANDB_RESUME" not in os.environ:
+        os.environ["WANDB_RESUME"] = "allow"
+
+    os.environ.setdefault("WANDB_JOB_TYPE", "sft-training")
+    if (
+        args.resume_from_checkpoint
+        and not existing_run_id
+        and os.environ.get("WANDB_RESUME", "").lower() != "auto"
+        and os.environ.get("LOCAL_RANK", "-1") in ("-1", "0")
+    ):
+        print(
+            "[wandb] warning: the trainer will resume a checkpoint but W&B will "
+            "create a new run. Pass --wandb_run_id to continue the original run."
+        )
+
+    summary = {
+        "enabled": True,
+        "project": os.environ.get("WANDB_PROJECT") or None,
+        "entity": os.environ.get("WANDB_ENTITY") or None,
+        "group": os.environ.get("WANDB_RUN_GROUP") or None,
+        "tags": [
+            tag.strip()
+            for tag in os.environ.get("WANDB_TAGS", "").split(",")
+            if tag.strip()
+        ],
+        "mode": os.environ.get("WANDB_MODE", "online"),
+        "log_model": os.environ.get("WANDB_LOG_MODEL", "false"),
+        "watch": os.environ.get("WANDB_WATCH", "false"),
+        "run_id": existing_run_id or None,
+        "resume": os.environ.get("WANDB_RESUME") or None,
+        "run_name": args.run_name or method_name,
+    }
+    if os.environ.get("LOCAL_RANK", "-1") in ("-1", "0"):
+        print(
+            "[wandb] enabled project={} run_name={} mode={} log_model={}".format(
+                summary["project"] or "<wandb-default>",
+                summary["run_name"],
+                summary["mode"],
+                summary["log_model"],
+            )
+        )
+    return summary
 
 
 def _parse_target_modules(value):
@@ -699,7 +924,7 @@ def _parse_target_modules(value):
     return modules
 
 
-def run_sft(args, method_name, example_builder):
+def run_sft(args, method_name, example_builder, manifest_extra=None):
     train_examples, eval_examples, preparation_stats = prepare_examples(
         args, example_builder
     )
@@ -719,7 +944,11 @@ def run_sft(args, method_name, example_builder):
     if args.max_length <= 0:
         raise ValueError("--max_length must be positive")
 
-    stack = _import_training_stack(args.load_in_4bit)
+    reporters = _resolve_reporters(args)
+    wandb_summary = _configure_wandb(args, reporters, method_name)
+    stack = _import_training_stack(
+        args.load_in_4bit, use_wandb=wandb_summary["enabled"]
+    )
     torch = stack["torch"]
     dtype, use_bf16, use_fp16 = _resolve_dtype(torch, args.dtype)
 
@@ -776,7 +1005,7 @@ def run_sft(args, method_name, example_builder):
         "max_length": args.max_length,
         "packing": args.packing,
         "completion_only_loss": True,
-        "report_to": _parse_report_to(args.report_to),
+        "report_to": reporters,
         "run_name": args.run_name or method_name,
         "seed": args.seed,
         "data_seed": args.seed,
@@ -841,9 +1070,14 @@ def run_sft(args, method_name, example_builder):
         "load_in_4bit": args.load_in_4bit,
         "max_length": args.max_length,
         "seed": args.seed,
+        "wandb": wandb_summary,
         "train_metrics": train_result.metrics,
         "arguments": vars(args),
     }
+    if manifest_extra is not None:
+        if not isinstance(manifest_extra, dict):
+            raise TypeError("manifest_extra must be a dictionary")
+        manifest["method_details"] = manifest_extra
     with (output_dir / "training_manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, ensure_ascii=False, indent=2)
         handle.write("\n")

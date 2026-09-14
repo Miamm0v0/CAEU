@@ -177,3 +177,394 @@ My Answer:"""
 "control" = "Did you feel like you were in control? Why?"
 "certainty" = "Did things go as you expected? If not, what was unexpected?"
 
+[external.crowd-envent.appraisal_ratings]
+"suddenness" = "The event occurred suddenly or unexpectedly."
+"familiarity" = "The situation felt familiar to me."
+"predict_event" = "I could predict that the event would happen."
+"pleasantness" = "The event was pleasant for me."
+"unpleasantness" = "The event was unpleasant for me."
+"goal_relevance" = "The event was relevant to my goals or needs."
+"chance_responsblt" = "Chance or circumstances were responsible."
+"self_responsblt" = "I was responsible for the event."
+"other_responsblt" = "Another person was responsible for the event."
+"predict_conseq" = "I could predict the consequences of the event."
+"goal_support" = "The event supported my goals."
+"urgency" = "The situation required an urgent response."
+"self_control" = "I could control or influence the situation."
+"other_control" = "Another person could control or influence it."
+"chance_control" = "Chance or circumstances controlled the outcome."
+"accept_conseq" = "I could accept or live with the consequences."
+"standards" = "The event concerned my personal standards or values."
+"social_norms" = "The event concerned social norms or expectations."
+"attention" = "The event demanded my attention."
+"not_consider" = "I tried not to think about or consider the event."
+"effort" = "Dealing with the event required effort from me."
+
+[templates.chain-appraisals]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to rate every appraisal statement. Think back to the moment when the events described in the story had just ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+Step 2 — Appraisal statements:
+{appraisal_statements}
+Options for every statement:
+- 1: Strongly disagree
+- 2: Somewhat disagree
+- 3: Neither agree nor disagree
+- 4: Somewhat agree
+- 5: Strongly agree
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with appraisal_reasoning first and appraisals second.
+2. Answer every core appraisal with a concise, situation-grounded first-person explanation.
+3. Every appraisal item must contain an integer score and its exactly matching option label.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-positive-level]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to judge how positive the situation made you feel immediately after it ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+Step 2 — Positive emotion intensity:
+- 0: Not at all positive
+- 1: Very slightly positive
+- 2: Slightly positive
+- 3: Moderately positive
+- 4: Quite a bit positive
+- 5: Very positive
+- 6: Extremely positive
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with core_appraisals first and positive_level second.
+2. Answer every core appraisal with a concise, situation-grounded first-person explanation.
+3. positive_level must contain an integer score and its exactly matching option label.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-negative-level]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to judge how negative the situation made you feel immediately after it ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+Step 2 — Negative emotion intensity:
+- 0: Not at all negative
+- 1: Very slightly negative
+- 2: Slightly negative
+- 3: Moderately negative
+- 4: Quite a bit negative
+- 5: Very negative
+- 6: Extremely negative
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with core_appraisals first and negative_level second.
+2. Answer every core appraisal with a concise, situation-grounded first-person explanation.
+3. negative_level must contain an integer score and its exactly matching option label.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-positive-labels]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to select the positive emotion groups you felt immediately after the event ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+Step 2 — Positive emotion groups:
+For each group, the lowercase ID before the colon or any one comma-separated synonym is valid; the comma-separated terms mean OR.
+{positive_labels}
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with core_appraisals first and positive_labels second.
+2. Answer every core appraisal with a concise, situation-grounded first-person explanation.
+3. positive_labels must be a JSON array. Use an empty array when no positive group applies; otherwise include only allowed IDs or individual synonyms.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-negative-labels]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to select the negative emotion groups you felt immediately after the event ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+Step 2 — Negative emotion groups:
+For each group, the lowercase ID before the colon or any one comma-separated synonym is valid; the comma-separated terms mean OR.
+{negative_labels}
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with core_appraisals first and negative_labels second.
+2. Answer every core appraisal with a concise, situation-grounded first-person explanation.
+3. negative_labels must be a JSON array. Use an empty array when no negative group applies; otherwise include only allowed IDs or individual synonyms.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-core-appraisals]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Answer all five core appraisal questions in the first person in one response. When answering, think back to the moment when the events described in the story had just ended.
+My Situation: {scenario}
+
+Core appraisal questions:
+{core_appraisal_questions}
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format.
+2. Keep every answer concise, ground it only in the situation, and use the first-person perspective.
+3. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
+[templates.chain-emotion]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Imagine that you are the person who wrote the event below. Infer
+your cognitive appraisals and how you felt immediately after the event.
+
+Situation:
+{scenario}
+
+Write one concise, natural-language first-person appraisal for each selected
+dimension:
+{appraisal_definition_lines}
+
+If a selected dimension is not clearly implicated by the event, state that
+there is no clear basis for that appraisal. Do not invent information in order
+to fill a dimension.
+
+Use the following CAREBench emotion format:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more exact labels from the positive list
+- negative_labels: zero or more exact labels from the negative list
+
+Positive emotion groups (the ID or any one comma-separated synonym is valid):
+{positive_labels}
+
+Negative emotion groups (the ID or any one comma-separated synonym is valid):
+{negative_labels}
+
+Include every required key. Use an empty list when no label applies. Do not use
+null values.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain-emotion-multilabel-crowd-envent]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Imagine that you are the person who wrote the event below. Infer
+your cognitive appraisals and how you felt immediately after the event.
+
+Situation:
+{scenario}
+
+Write one concise, natural-language first-person appraisal for each selected
+dimension:
+{appraisal_definition_lines}
+
+If a selected dimension is not clearly implicated by the event, state that
+there is no clear basis for that appraisal. Do not invent information in order
+to fill a dimension.
+
+Keep the native CAEU emotion object unchanged:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more exact labels from the positive list
+- negative_labels: zero or more exact labels from the negative list
+
+Positive emotion labels:
+{positive_labels}
+
+Negative emotion labels:
+{negative_labels}
+
+Include every required key. Use an empty list when no label applies. The
+positive_labels and negative_labels arrays remain part of the native CAEU
+output and must not be replaced or reordered for evaluation.
+
+For evaluation only, add evaluation_only_emotion_ranking after the emotion
+object. It must contain exactly the union of positive_labels and
+negative_labels, globally ordered from most to least likely. If both native
+label lists are empty, use ["no-emotion"]. Do not include no-emotion with any
+other label. This ranking field must not change the native emotion object.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain-emotion-covidet]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Imagine that you are the person who wrote the event below. Infer
+your cognitive appraisals and how you felt immediately after the event.
+
+Situation:
+{scenario}
+
+Write one concise, natural-language first-person appraisal for each selected
+dimension:
+{appraisal_definition_lines}
+
+If a selected dimension is not clearly implicated by the event, state that
+there is no clear basis for that appraisal. Do not invent information in order
+to fill a dimension.
+
+Predict emotion in the native CovidET format. emotion.labels must contain all
+and only the supported labels from this list:
+{emotion_labels}
+
+The labels field must be a JSON array. Do not generate emotion intensity,
+positive_labels, or negative_labels. Use an empty array only when none of the
+seven labels is supported.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain-emotion-crowd-envent]
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+user = """Imagine that you are the person who wrote the event below. Infer
+your cognitive appraisals and how you felt immediately after the event.
+
+Situation:
+{scenario}
+
+Write one concise, natural-language first-person appraisal for each selected
+dimension:
+{appraisal_definition_lines}
+
+If a selected dimension is not clearly implicated by the event, state that
+there is no clear basis for that appraisal. Do not invent information in order
+to fill a dimension.
+
+Predict emotion in the native crowd-enVent format. Choose exactly one label
+from this list:
+{emotion_labels}
+
+Set emotion.intensity to an integer from 1 (not at all intense) to 5
+(extremely intense). Do not generate separate positive and negative emotion
+candidates. The label and intensity must describe the same single emotion.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.direct-appraisals-crowd-envent]
+system = """You predict the event experiencer's crowd-enVent appraisal ratings directly from a first-person event description. Use only information supported by the description. Return exactly one valid JSON object without appraisal reasoning, emotion, markdown, or commentary."""
+user = """Predict the 21 crowd-enVent appraisal ratings directly from the situation.
+
+Situation:
+{scenario}
+
+Rate every appraisal below using an integer from 1 (not at all) to 5 (extremely):
+{appraisal_rating_lines}
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.direct-emotion-crowd-envent]
+system = """You predict the event experiencer's emotion directly from a first-person event description. Use only information supported by the description. Return exactly one valid JSON object without appraisal reasoning, appraisal ratings, markdown, or commentary."""
+user = """Predict the crowd-enVent emotion directly from the situation.
+
+Situation:
+{scenario}
+
+Choose exactly one label:
+{emotion_labels}
+
+Set emotion.intensity to an integer from 1 (not at all intense) to 5 (extremely intense). The label and intensity must describe the same single emotion.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.direct-emotion-multilabel-crowd-envent]
+system = """You predict the event experiencer's emotions directly from a first-person event description. Use only information supported by the description. Return exactly one valid JSON object without appraisal reasoning, appraisal ratings, markdown, or commentary."""
+user = """Predict one or more crowd-enVent emotion labels directly from the situation.
+
+Situation:
+{scenario}
+
+Select any number of supported labels from this list:
+{emotion_labels}
+
+Return at least one label. Use ["no-emotion"] only when no emotion applies, and never combine no-emotion with another label. emotion.labels is a ranking, not an unordered set: order selected labels from most to least likely and do not copy the order of the option list. The first label is used for standard single-label metrics. Set emotion.intensity to an integer from 1 (not at all intense) to 5 (extremely intense).
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.full-chain]
+user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Please complete all six cognitive appraisal and emotion tasks in one response. When answering, please think back to the moment when the events described in the story had just ended.
+My Situation: {scenario}
+
+First, answer the five core appraisal questions in the first person. Keep each answer concise, ground it only in the situation, and try to keep it within 60 tokens.
+Questions:
+{core_appraisal_questions}
+
+Second, indicate how much each appraisal statement reflects how you feel about the event.
+Statements:
+{appraisal_statements}
+Options:
+- 1: Strongly disagree
+- 2: Somewhat disagree
+- 3: Neither agree nor disagree
+- 4: Somewhat agree
+- 5: Strongly agree
+
+Third, answer how positive this situation made you feel.
+Options:
+- 0: Not at all positive
+- 1: Very slightly positive
+- 2: Slightly positive
+- 3: Moderately positive
+- 4: Quite a bit positive
+- 5: Very positive
+- 6: Extremely positive
+
+Fourth, answer how negative this situation made you feel.
+Options:
+- 0: Not at all negative
+- 1: Very slightly negative
+- 2: Slightly negative
+- 3: Moderately negative
+- 4: Quite a bit negative
+- 5: Very negative
+- 6: Extremely negative
+
+Fifth, select zero or more positive emotion groups. For each group, the
+lowercase ID before the colon or any one comma-separated synonym is valid;
+the comma-separated terms mean OR.
+Options:
+{positive_labels}
+
+Sixth, select zero or more negative emotion groups. For each group, the
+lowercase ID before the colon or any one comma-separated synonym is valid;
+the comma-separated terms mean OR.
+Options:
+{negative_labels}
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format.
+2. Do not use markdown code fences.
+3. Do not provide any introductory text or explanation outside the JSON object.
+4. Use integers for all appraisal ratings and emotion intensities.
+5. Use exactly the required keys and allowed emotion-group expressions.
+My Answer:"""

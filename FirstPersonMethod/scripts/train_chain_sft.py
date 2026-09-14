@@ -13,6 +13,9 @@ QLoRA training example (run from the workspace root):
     --train_file train.json \
     --eval_file dev.json \
     --load_in_4bit \
+    --use_wandb \
+    --wandb_project first-person-appraisal-sft \
+    --run_name chain-sft \
     --output_dir FirstPersonMethod/output/chain_sft
 """
 
@@ -31,4 +34,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
