@@ -12,6 +12,7 @@ from typing import Any, Iterable, Mapping
 POSITIVE_EMOTIONS = ("joy", "pride", "relief", "gratitude", "excitement")
 NEGATIVE_EMOTIONS = ("anger", "sadness", "fear", "disgust", "embarrassment")
 ALL_EMOTIONS = POSITIVE_EMOTIONS + NEGATIVE_EMOTIONS
+EVALUATION_ONLY_EMOTION_RANKING_FIELD = "evaluation_only_emotion_ranking"
 
 APPRAISAL_DIMENSIONS = (
     "relevance",
@@ -218,6 +219,32 @@ def select_free_emotion(emotion: Mapping[str, Any]) -> tuple[str, dict[str, Any]
         "selected_label": selected_label,
         "intensity_tie": positive_intensity == negative_intensity,
     }
+
+
+def parse_evaluation_only_emotion_ranking(
+    value: Any, emotion: Mapping[str, Any]
+) -> list[str]:
+    """Validate a global ranking of the native valence-separated candidates."""
+    field = EVALUATION_ONLY_EMOTION_RANKING_FIELD
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{field} must be a non-empty array")
+    ranking: list[str] = []
+    for raw_label in value:
+        if not isinstance(raw_label, str):
+            raise ValueError(f"{field} contains a non-string label")
+        label = normalize_emotion(raw_label)
+        if label is None:
+            raise ValueError(f"{field} contains invalid label: {raw_label!r}")
+        if label in ranking:
+            raise ValueError(f"{field} contains duplicate label: {label!r}")
+        ranking.append(label)
+    expected = set(emotion["positive_labels"]) | set(emotion["negative_labels"])
+    if set(ranking) != expected:
+        raise ValueError(
+            f"{field} must contain exactly the positive_labels and "
+            "negative_labels candidates"
+        )
+    return ranking
 
 
 def parse_constrained_emotion(value: Any, allowed: Iterable[str]) -> dict[str, str]:

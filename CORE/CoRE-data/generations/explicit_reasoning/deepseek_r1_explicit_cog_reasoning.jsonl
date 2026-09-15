@@ -1,0 +1,274 @@
+{"id": "happiness_0", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "happiness_1", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "happiness_2", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "happiness_3", "output": "{\"final answer\": \"self control\"}"}
+{"id": "happiness_4", "output": "{\"final answer\": \"self control\"}"}
+{"id": "happiness_5", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "happiness_6", "output": "{\"final answer\": \"self control\"}"}
+{"id": "happiness_7", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "happiness_8", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "happiness_9", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "happiness_10", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "happiness_11", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "happiness_12", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "happiness_13", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "surprise_0", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_1", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_2", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_3", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_4", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_5", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_6", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_7", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_8", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_9", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_10", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_11", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_12", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_13", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_14", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_15", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "surprise_16", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "pride_0", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_1", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_2", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_3", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_4", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_5", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_6", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_7", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_8", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_9", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "pride_10", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_11", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_12", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "pride_13", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "pride_14", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "interest_0", "output": "{\"final answer\": \"understand\"}"}
+{"id": "interest_1", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_2", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_3", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_4", "output": "{\"final answer\": \"understand\"}"}
+{"id": "interest_5", "output": "{\"final answer\": \"understand\"}"}
+{"id": "interest_6", "output": "{\"final answer\": \"consider\"}"}
+{"id": "interest_7", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_8", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_9", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "interest_10", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_11", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_12", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_13", "output": "{\"final answer\": \"understand\"}"}
+{"id": "interest_14", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_15", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_16", "output": "{\"final answer\": \"attention\"}"}
+{"id": "interest_17", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "interest_18", "output": "{\"final answer\": \"understand\"}"}
+{"id": "interest_19", "output": "{\"final answer\": \"attention\"}"}
+{"id": "hope_0", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_1", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_2", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_3", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_4", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_5", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_6", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_7", "output": "{\"final answer\": \"other control\"}"}
+{"id": "hope_8", "output": "{\"final answer\": \"other control\"}"}
+{"id": "hope_9", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_10", "output": "{\"final answer\": \"other control\"}"}
+{"id": "hope_11", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_12", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_13", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_14", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_15", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "hope_16", "output": "{\"final answer\": \"self control\"}"}
+{"id": "hope_17", "output": "{\"final answer\": \"self control\"}"}
+{"id": "boredom_0", "output": "{\"final answer\": \"effort\"}"}
+{"id": "boredom_1", "output": "{\"final answer\": effort}"}
+{"id": "boredom_2", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_3", "output": "{\"final answer\": \"understand\"}"}
+{"id": "boredom_4", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_5", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "boredom_6", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "boredom_7", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "boredom_8", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_9", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_10", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "boredom_11", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "boredom_12", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "boredom_13", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_14", "output": "{\"final answer\": \"enjoyment\"}"}
+{"id": "boredom_15", "output": "{\"final answer\": \"attention\"}"}
+{"id": "boredom_16", "output": "{\"final answer\": \"self control\"}"}
+{"id": "disgust_0", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_1", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_2", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_3", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "disgust_4", "output": "{\"final answer\": \"cheated\"}"}
+{"id": "disgust_5", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_6", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_7", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_8", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_9", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_10", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_11", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_12", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_13", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "disgust_14", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_15", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "disgust_16", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "contempt_0", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_1", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_2", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_3", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_4", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_5", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_6", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_7", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_8", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_9", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_10", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_11", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_12", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "contempt_13", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_14", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "contempt_15", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "contempt_16", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "guilt_0", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_1", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_2", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_3", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_4", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_5", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_6", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_7", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_8", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_9", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_10", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_11", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_12", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_13", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_14", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_15", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_16", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "guilt_17", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "fear_0", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_1", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_2", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_3", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_4", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_5", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_6", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_7", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_8", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_9", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_10", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_11", "output": "{\"final answer\": certainty}"}
+{"id": "fear_12", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_13", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_14", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_15", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_16", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "fear_17", "output": "{\"final answer\": \"self control\"}"}
+{"id": "fear_18", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "fear_19", "output": "{\"final answer\": \"self control\"}"}
+{"id": "shame_0", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_1", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_2", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_3", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_4", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_5", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_6", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_7", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_8", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_9", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_10", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_11", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_12", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_13", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_14", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_15", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_16", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "shame_17", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "sadness_0", "output": "{\"final answer\": \"cheated\"}"}
+{"id": "sadness_1", "output": "{\"final answer\": \"self responsibility\"}"}
+{"id": "sadness_2", "output": "{\"final answer\": \"self control\"}"}
+{"id": "sadness_3", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "sadness_4", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_5", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_6", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_7", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_8", "output": "{\"final answer\": \"certainty\"}"}
+{"id": "sadness_9", "output": "{\"final answer\": \"self control\"}"}
+{"id": "sadness_10", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_11", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_12", "output": "{\"final answer\": \"pleasantness\"}"}
+{"id": "sadness_13", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "sadness_14", "output": "{\"final answer\": \"situational control\"}"}
+{"id": "sadness_15", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_0", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_1", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_2", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_3", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_4", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_5", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_6", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_7", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_8", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_9", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_10", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_11", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_12", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_13", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_14", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_15", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "anger_16", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_17", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_18", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_19", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_20", "output": "{\"final answer\": \"other responsibility\"}"}
+{"id": "anger_21", "output": "{\"final answer\": \"fairness\"}"}
+{"id": "challenge_0", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_1", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_2", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_3", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_4", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_5", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_6", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_7", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_8", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_9", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_10", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_11", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_12", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_13", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_14", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_15", "output": "{\"final answer\": \"effort\"}"}
+{"id": "challenge_16", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_17", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_18", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_19", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_20", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_21", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_22", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_23", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_24", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_25", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_26", "output": "{\"final answer\": \"self control\"}"}
+{"id": "challenge_27", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "challenge_28", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_0", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_1", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_2", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_3", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_4", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_5", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_6", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_7", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_8", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_9", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_10", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_11", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_12", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_13", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_14", "output": "{\"final answer\": \"obstacle\"}"}
+{"id": "frustration_15", "output": "{\"final answer\": \"obstacle\"}"}

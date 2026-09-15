@@ -12,10 +12,13 @@ from typing import Any, Iterable
 
 from chiaro_common import (
     ALL_EMOTIONS,
+    EVALUATION_ONLY_EMOTION_RANKING_FIELD,
     NEGATIVE_EMOTIONS,
     POSITIVE_EMOTIONS,
     load_chiaro_items,
     normalize_emotion,
+    parse_evaluation_only_emotion_ranking,
+    parse_free_emotion,
     read_prediction_records,
     write_json,
 )
@@ -180,6 +183,137 @@ def _free_emotion_diagnostics(
     }
 
 
+def _free_emotion_retrieval_metrics(
+    matched_examples: list[tuple[dict[str, Any], dict[str, Any]]],
+    total_agent_targets: int,
+) -> dict[str, Any] | None:
+    free_examples = [
+        (item, record)
+        for item, record in matched_examples
+        if record.get("emotion_mode") == "valence-free"
+    ]
+    if not free_examples:
+        return None
+
+    matched_modes = {
+        str(record.get("emotion_mode")) for _, record in matched_examples
+    }
+    homogeneous_free_run = matched_modes == {"valence-free"}
+    agent_targets = (
+        total_agent_targets if homogeneous_free_run else 2 * len(free_examples)
+    )
+    candidate_hits = 0
+    candidate_sets_available = 0
+    candidate_counts: list[float] = []
+    ranking_available = 0
+    hit_counts = {1: 0, 2: 0, 3: 0}
+    top1_agreements = 0
+    top1_comparable = 0
+    invalid_outputs: list[dict[str, Any]] = []
+    invalid_rankings: list[dict[str, Any]] = []
+
+    for item, record in free_examples:
+        for output_key, slot, lower in (
+            ("agent_a_output", "A", "a"),
+            ("agent_b_output", "B", "b"),
+        ):
+            output = record.get(output_key)
+            if not isinstance(output, dict):
+                continue
+            try:
+                emotion = parse_free_emotion(output.get("emotion"))
+            except ValueError as exc:
+                invalid_outputs.append(
+                    {"id": str(item["id"]), "slot": slot, "error": str(exc)}
+                )
+                continue
+            gold = normalize_emotion(item[f"human_gold_{lower}"])
+            if gold is None:
+                raise ValueError(f"{item['id']}: invalid human gold for slot {slot}")
+            candidates = emotion["positive_labels"] + emotion["negative_labels"]
+            candidate_sets_available += 1
+            candidate_counts.append(float(len(candidates)))
+            candidate_hits += int(gold in candidates)
+
+            raw_ranking = output.get(EVALUATION_ONLY_EMOTION_RANKING_FIELD)
+            if raw_ranking is None:
+                continue
+            try:
+                ranking = parse_evaluation_only_emotion_ranking(
+                    raw_ranking, emotion
+                )
+            except ValueError as exc:
+                invalid_rankings.append(
+                    {"id": str(item["id"]), "slot": slot, "error": str(exc)}
+                )
+                continue
+            ranking_available += 1
+            for k in hit_counts:
+                hit_counts[k] += int(gold in ranking[:k])
+            selected = normalize_emotion(record.get(f"llm_emotion_{slot}"))
+            if selected is not None:
+                top1_comparable += 1
+                top1_agreements += int(ranking[0] == selected)
+
+    candidate_hit = {
+        "agent_targets": agent_targets,
+        "candidate_sets_available": candidate_sets_available,
+        "candidate_set_coverage": _safe_percent(
+            candidate_sets_available, agent_targets
+        ),
+        "hits": candidate_hits,
+        "hit_rate": _safe_percent(candidate_hits, agent_targets),
+        "hit_rate_available_only": _safe_percent(
+            candidate_hits, candidate_sets_available
+        ),
+        "mean_candidate_count": _mean(candidate_counts),
+        "missing_candidate_sets": agent_targets - candidate_sets_available,
+        "invalid_outputs": invalid_outputs,
+        "definition": (
+            "Candidate Hit = the percentage of agent targets whose gold emotion "
+            "appears anywhere in the union of positive_labels and negative_labels. "
+            "Missing predictions are misses."
+        ),
+    }
+    hit_at_k = {
+        "agent_targets": agent_targets,
+        "k_values": [1, 2, 3],
+        "rankings_available": ranking_available,
+        "ranking_coverage": _safe_percent(ranking_available, agent_targets),
+        "missing_or_invalid_rankings": agent_targets - ranking_available,
+        "by_k": {
+            str(k): {
+                "hits": hit_counts[k],
+                "hit_rate": _safe_percent(hit_counts[k], agent_targets),
+                "hit_rate_available_only": _safe_percent(
+                    hit_counts[k], ranking_available
+                ),
+            }
+            for k in (1, 2, 3)
+        },
+        "ranking_field": EVALUATION_ONLY_EMOTION_RANKING_FIELD,
+        "top1_selected_label_agreement_rate": _safe_percent(
+            top1_agreements, top1_comparable
+        ),
+        "top1_selected_label_comparable_n": top1_comparable,
+        "invalid_rankings": invalid_rankings,
+        "definition": (
+            "Hit@k = the percentage of agent targets whose gold emotion appears "
+            "in the first k labels of the model-generated global ranking. "
+            "Candidate lists shorter than k are not padded; missing predictions "
+            "or rankings are misses."
+        ),
+        "ranking_note": (
+            "The evaluator uses only the explicit model-generated ranking and "
+            "never infers cross-valence order from intensity or canonical label order."
+        ),
+    }
+    return {
+        "emotion_candidate_hit": candidate_hit,
+        "emotion_hit_at_k": hit_at_k,
+    }
+
+
 def build_report(
     items: list[dict[str, Any]], records: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -188,6 +322,7 @@ def build_report(
     slot_pairs: dict[str, list[tuple[str, str]]] = {"A": [], "B": []}
     version_pairs: dict[str, list[tuple[str, str]]] = collections.defaultdict(list)
     matched_records: list[dict[str, Any]] = []
+    matched_examples: list[tuple[dict[str, Any], dict[str, Any]]] = []
     parsed_agents = 0
     correct_agents = 0
     complete_pairs = 0
@@ -207,6 +342,7 @@ def build_report(
             missing_scene_ids.append(item_id)
             continue
         matched_records.append(record)
+        matched_examples.append((item, record))
         pair_is_complete = True
         pair_is_correct = True
         for slot, lower in (("A", "a"), ("B", "b")):
@@ -310,6 +446,11 @@ def build_report(
     free_diagnostics = _free_emotion_diagnostics(matched_records)
     if free_diagnostics is not None:
         report["carebench_emotion_diagnostics"] = free_diagnostics
+    retrieval_metrics = _free_emotion_retrieval_metrics(
+        matched_examples, total_agents
+    )
+    if retrieval_metrics is not None:
+        report.update(retrieval_metrics)
     return report
 
 
@@ -348,6 +489,20 @@ def execute(args: argparse.Namespace) -> int:
             _format_metric(pair["pair_accuracy_missing_as_wrong"]),
         )
     )
+    if "emotion_candidate_hit" in report:
+        candidate = report["emotion_candidate_hit"]
+        hit_at_k = report["emotion_hit_at_k"]
+        print(
+            "[metrics:retrieval] candidate_hit={} avg_candidates={} "
+            "hit@1={} hit@2={} hit@3={} ranking_coverage={}".format(
+                _format_metric(candidate["hit_rate"]),
+                _format_metric(candidate["mean_candidate_count"]),
+                _format_metric(hit_at_k["by_k"]["1"]["hit_rate"]),
+                _format_metric(hit_at_k["by_k"]["2"]["hit_rate"]),
+                _format_metric(hit_at_k["by_k"]["3"]["hit_rate"]),
+                _format_metric(hit_at_k["ranking_coverage"]),
+            )
+        )
     for version, metrics in report["by_version"].items():
         print(
             f"[metrics:{version}] n={metrics['n']} "

@@ -5,11 +5,16 @@ CHIARO test set. Generation and metric computation are separate.
 
 ## Experimental factors
 
-`--generation_schema` controls whether appraisal reasoning is explicit:
+`--generation_schema` controls whether agents are predicted jointly or
+separately and whether appraisal reasoning is explicit:
 
 - `direct`: one joint two-agent call per scene, without appraisal reasoning.
+- `separate`: two independent calls per scene, one for each agent, without
+  appraisal reasoning.
 - `chain`: two calls per scene, one from each agent's perspective, with the five
   CAEU appraisal dimensions before emotion prediction.
+- `chain-joint`: one joint call per scene whose JSON contains separate
+  `agent_a` and `agent_b` appraisal-reasoning and emotion objects.
 
 `--emotion_mode` controls access to gold valence:
 
@@ -19,11 +24,18 @@ CHIARO test set. Generation and metric computation are separate.
 - `valence-free`: expose all 10 CHIARO labels without identifying the target
   agent's valence. Each agent emits CAREBench-style positive/negative label
   lists and intensities. Scoring selects the first ranked label from the side
-  with greater intensity.
+  with greater intensity. The native emotion object is preserved, and an
+  `evaluation_only_emotion_ranking` field globally ranks exactly the labels in
+  the two native arrays for Candidate Hit and Hit@k.
 
-The four combinations should be written to different prediction files. JSON
+The eight combinations should be written to different prediction files. JSON
 output is directly compatible with CHIARO's `score_predictions.py`; JSONL is
 also accepted by the local metric script.
+
+All four schemas write the same top-level prediction fields,
+`llm_emotion_A` and `llm_emotion_B`, so they use the same metric command.
+`separate`, `chain`, and `chain-joint` additionally retain structured
+`agent_a_output` and `agent_b_output` fields for inspection.
 
 ## Generate
 
@@ -42,6 +54,14 @@ CUDA_VISIBLE_DEVICES=0 python chiaro_utils/generate_policy_chiaro.py \
 
 For a quick smoke run, add `--max_samples 5`. Resume is automatic; use
 `--overwrite_predictions` to intentionally replace an existing run.
+
+Valence-free predictions created before prompt version `chiaro-caeu-0.6` do
+not contain the explicit cross-valence ranking. Regenerate them into a new
+prediction file (recommended) or pass `--overwrite_predictions` before
+reporting Hit@k.
+
+Use `--generation_schema separate` for two independent direct predictions, or
+`--generation_schema chain-joint` for one joint appraisal-to-emotion call.
 
 For the official direct protocol, use:
 
@@ -68,3 +88,8 @@ python chiaro_utils/compute_chiaro_metrics.py \
 
 The report includes accuracy, 10-class macro-F1, per-emotion metrics,
 physical/non-physical results, parse coverage, and two-agent pair accuracy.
+For valence-free runs it also reports Candidate Hit, mean candidate count,
+Hit@1, Hit@2, Hit@3, and explicit-ranking coverage. Candidate Hit uses the
+union of `positive_labels` and `negative_labels`; Hit@k uses only
+`evaluation_only_emotion_ranking` and never infers a cross-valence order from
+the two intensity scores.

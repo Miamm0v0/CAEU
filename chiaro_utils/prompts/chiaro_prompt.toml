@@ -1,5 +1,5 @@
 [meta]
-version = "0.4"
+version = "0.6"
 
 [appraisal]
 dimension_names = "relevance, epistemic, goal congruence, agency/accountability, control/coping potential"
@@ -59,6 +59,47 @@ For each agent, use this CAREBench-style emotion format:
 
 The label arrays must be ordered from most to least likely within each valence. The evaluator selects the first label from the side with greater intensity. If both lists are non-empty, use different intensities so that the single strongest side is identifiable. Judge the valence from the situation; no target valence is supplied.
 
+For evaluation only, add evaluation_only_emotion_ranking inside each agent object after the emotion object. It must contain exactly the union of that agent's positive_labels and negative_labels, globally ordered from most to least likely. This ranking field must not change the native emotion object.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.separate_constrained]
+system = """You predict the emotion of one person in a situation. Read the situation from exactly the specified person's perspective and use only information supported by the situation. Return exactly one valid JSON object without appraisal reasoning, markdown, or commentary."""
+user = """Instruction: Imagine you are {target_role}, the person described in the following situation.
+Read it carefully and internalize the feelings and situation from this person's perspective.
+When answering, think back to the moment when the events described in the situation had just ended.
+
+My Situation:
+{sentence}
+
+Choose exactly one emotion from these CHIARO options:
+{allowed_emotions}
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.separate_free]
+system = """You predict the emotion of one person in a situation. Read the situation from exactly the specified person's perspective and use only information supported by the situation. Do not assume whether the emotion is positive or negative. Return exactly one valid JSON object without appraisal reasoning, markdown, or commentary."""
+user = """Instruction: Imagine you are {target_role}, the person described in the following situation.
+Read it carefully and internalize the feelings and situation from this person's perspective.
+When answering, think back to the moment when the events described in the situation had just ended.
+
+My Situation:
+{sentence}
+
+Report your emotion using the following format:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more labels from: {positive_labels}
+- negative_labels: zero or more labels from: {negative_labels}
+
+Order the label arrays from most to least likely within each valence.
+Do not assume whether the emotion is positive or negative from the task setup.
+Because evaluation requires one final label, when both label arrays are non-empty, use unequal intensities to indicate which valence contains your single most likely emotion.
+
+For evaluation only, add evaluation_only_emotion_ranking after the emotion object. It must contain exactly the union of positive_labels and negative_labels, globally ordered from most to least likely. This ranking field must not change the native emotion object.
+
 Return exactly this structure and no other keys:
 {output_schema}"""
 
@@ -87,6 +128,70 @@ Write one concise first-person appraisal for each dimension.
 
 Then choose exactly one emotion from these CHIARO options:
 {allowed_emotions}
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain_joint_constrained]
+system = """You reason about an emotional situation from the perspectives of two people who experienced it.
+
+Treat each person as a separate experiencer. For each person, reason in the first person about the five appraisal dimensions before predicting that person's emotion.
+
+Every appraisal must be a concise natural-language first-person statement grounded only in the situation. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Do not transfer one person's appraisal or emotion to the other person.
+
+Return exactly one valid JSON object without markdown or commentary."""
+user = """Read the following shared situation carefully. Independently imagine being each specified person at the moment when the events had just ended.
+
+My Situation:
+{sentence}
+
+Agent A: {agent_a_role}
+Agent B: {agent_b_role}
+
+For each agent, reason about how that person appraised the situation along these dimensions:
+
+{appraisal_definition_lines}
+
+Write one concise first-person appraisal for every dimension under each agent's appraisal_reasoning object.
+
+Then choose exactly one emotion for each agent from that agent's own CHIARO options:
+- Agent A options: {allowed_emotions_a}
+- Agent B options: {allowed_emotions_b}
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
+[templates.chain_joint_free]
+system = """You reason about an emotional situation from the perspectives of two people who experienced it.
+
+Treat each person as a separate experiencer. For each person, reason in the first person about the five appraisal dimensions before predicting that person's emotion.
+
+Every appraisal must be a concise natural-language first-person statement grounded only in the situation. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Do not transfer one person's appraisal or emotion to the other person.
+
+Return exactly one valid JSON object without markdown or commentary."""
+user = """Read the following shared situation carefully. Independently imagine being each specified person at the moment when the events had just ended.
+
+My Situation:
+{sentence}
+
+Agent A: {agent_a_role}
+Agent B: {agent_b_role}
+
+For each agent, reason about how that person appraised the situation along these dimensions:
+
+{appraisal_definition_lines}
+
+Write one concise first-person appraisal for every dimension under each agent's appraisal_reasoning object.
+
+Then report each agent's emotion using the following format:
+- positive_intensity: integer from 0 to 6
+- negative_intensity: integer from 0 to 6
+- positive_labels: zero or more labels from: {positive_labels}
+- negative_labels: zero or more labels from: {negative_labels}
+
+Order each label array from most to least likely within its valence. Do not assume whether either agent's emotion is positive or negative from the task setup. Because evaluation requires one final label per agent, when both label arrays are non-empty, use unequal intensities to indicate which valence contains that agent's single most likely emotion.
+
+For evaluation only, add evaluation_only_emotion_ranking inside each agent object after the emotion object. It must contain exactly the union of that agent's positive_labels and negative_labels, globally ordered from most to least likely. This ranking field must not change the native emotion object.
 
 Return exactly this structure and no other keys:
 {output_schema}"""
@@ -123,6 +228,8 @@ Then report your emotion using the following format:
 Order the label arrays from most to least likely within each valence.
 Do not assume whether the emotion is positive or negative from the task setup.
 Because evaluation requires one final label, when both label arrays are non-empty, use unequal intensities to indicate which valence contains your single most likely emotion.
+
+For evaluation only, add evaluation_only_emotion_ranking after the emotion object. It must contain exactly the union of positive_labels and negative_labels, globally ordered from most to least likely. This ranking field must not change the native emotion object.
 
 Return exactly this structure and no other keys:
 {output_schema}"""

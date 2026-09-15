@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate role-conditioned CHIARO predictions with direct or appraisal chains."""
+"""Generate CHIARO predictions with joint or role-separated prompting."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from baseline_transformers_backend import TransformersClient
 from chiaro_common import (
+    EVALUATION_ONLY_EMOTION_RANKING_FIELD,
     NEGATIVE_EMOTIONS,
     POSITIVE_EMOTIONS,
     extract_json_object,
@@ -26,6 +27,7 @@ from chiaro_common import (
     load_chiaro_items,
     parse_appraisal_reasoning,
     parse_constrained_emotion,
+    parse_evaluation_only_emotion_ranking,
     parse_free_emotion,
     read_prediction_records,
     select_free_emotion,
@@ -35,7 +37,19 @@ from chiaro_common import (
 
 DEFAULT_EVAL_FILE = REPO_ROOT / "Chiaro-main" / "data" / "chiaro_test.json"
 DEFAULT_PROMPT_FILE = UTILS_DIR / "prompts" / "chiaro_prompt.toml"
-PROMPT_VERSION = "chiaro-caeu-0.4"
+PROMPT_VERSIONS = {
+    "direct": "chiaro-caeu-0.4",
+    "chain": "chiaro-caeu-0.4",
+    "separate": "chiaro-caeu-0.5",
+    "chain-joint": "chiaro-caeu-0.5",
+}
+VALENCE_FREE_PROMPT_VERSION = "chiaro-caeu-0.6"
+
+
+def prompt_version(generation_schema: str, emotion_mode: str) -> str:
+    if emotion_mode == "valence-free":
+        return VALENCE_FREE_PROMPT_VERSION
+    return PROMPT_VERSIONS[generation_schema]
 
 
 def str2bool(value: str | bool) -> bool:
@@ -61,17 +75,19 @@ def load_toml(path: Path) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate a local model on CHIARO using a direct joint prompt or "
-            "two role-conditioned appraisal chains per scene"
+            "Evaluate a local model on CHIARO with joint or role-separated "
+            "direct and appraisal-chain prompts"
         )
     )
     parser.add_argument(
         "--generation_schema",
-        choices=["direct", "chain"],
+        choices=["direct", "separate", "chain", "chain-joint"],
         default="chain",
         help=(
-            "direct uses one joint two-agent call without appraisal; chain uses "
-            "one five-dimensional appraisal-to-emotion call per agent."
+            "direct uses one joint two-agent call without appraisal; separate "
+            "predicts each agent independently without appraisal; chain uses one "
+            "appraisal-to-emotion call per agent; chain-joint generates both "
+            "agents' appraisal-to-emotion outputs in one call."
         ),
     )
     parser.add_argument(
@@ -112,8 +128,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Defaults to 40 for direct constrained, 512 for direct free, and "
-            "1536 for chain."
+            "Defaults to 40 for direct/separate constrained, 512 for "
+            "direct/separate free, 1536 for chain, and 3072 for chain-joint."
         ),
     )
     parser.add_argument("--temperature", type=float, default=0.0)
@@ -150,6 +166,8 @@ def resolve_max_tokens(args: argparse.Namespace) -> int:
         if args.max_tokens <= 0:
             raise ValueError("--max_tokens must be positive")
         return args.max_tokens
+    if args.generation_schema == "chain-joint":
+        return 3072
     if args.generation_schema == "chain":
         return 1536
     if args.emotion_mode == "valence-free":
@@ -196,18 +214,33 @@ def _format_options(options: dict[str, str]) -> str:
     return "\n".join(f"{letter}. {label}" for letter, label in sorted(options.items()))
 
 
-def _appraisal_schema(emotion_schema: dict[str, Any]) -> str:
-    return json.dumps(
-        {
-            "appraisal_reasoning": {
-                "relevance": "first-person appraisal",
-                "epistemic": "first-person appraisal",
-                "goal_congruence": "first-person appraisal",
-                "agency_accountability": "first-person appraisal",
-                "control_coping_potential": "first-person appraisal",
-            },
-            "emotion": emotion_schema,
+def _appraisal_output_schema(
+    emotion_schema: dict[str, Any], *, include_ranking: bool = False
+) -> dict[str, Any]:
+    schema = {
+        "appraisal_reasoning": {
+            "relevance": "first-person appraisal",
+            "epistemic": "first-person appraisal",
+            "goal_congruence": "first-person appraisal",
+            "agency_accountability": "first-person appraisal",
+            "control_coping_potential": "first-person appraisal",
         },
+        "emotion": emotion_schema,
+    }
+    if include_ranking:
+        schema[EVALUATION_ONLY_EMOTION_RANKING_FIELD] = [
+            "all selected emotion labels, globally ranked"
+        ]
+    return schema
+
+
+def _appraisal_schema(
+    emotion_schema: dict[str, Any], *, include_ranking: bool = False
+) -> str:
+    return json.dumps(
+        _appraisal_output_schema(
+            emotion_schema, include_ranking=include_ranking
+        ),
         ensure_ascii=False,
         indent=2,
     )
@@ -246,27 +279,71 @@ def _parse_direct_free(raw: str) -> dict[str, Any]:
     parsed: dict[str, Any] = {}
     for source_key, slot in (("agent_a", "A"), ("agent_b", "B")):
         agent = payload[source_key]
-        if not isinstance(agent, dict) or set(agent) != {"emotion"}:
-            raise ValueError(f"{source_key} must contain exactly an emotion object")
+        expected = {"emotion", EVALUATION_ONLY_EMOTION_RANKING_FIELD}
+        if not isinstance(agent, dict) or set(agent) != expected:
+            raise ValueError(
+                f"{source_key} must contain exactly emotion and "
+                f"{EVALUATION_ONLY_EMOTION_RANKING_FIELD}"
+            )
         emotion = parse_free_emotion(agent["emotion"])
         # Selection is part of parse validity so an ambiguous intensity tie is
         # retried instead of escaping later and terminating the entire run.
         select_free_emotion(emotion)
-        parsed[slot] = {"emotion": emotion}
+        ranking = parse_evaluation_only_emotion_ranking(
+            agent[EVALUATION_ONLY_EMOTION_RANKING_FIELD], emotion
+        )
+        parsed[slot] = {
+            "emotion": emotion,
+            EVALUATION_ONLY_EMOTION_RANKING_FIELD: ranking,
+        }
     return parsed
 
 
-def _parse_chain(
+def _parse_separate(
     raw: str,
     *,
     emotion_mode: str,
     allowed_emotions: tuple[str, ...],
 ) -> dict[str, Any]:
     payload = extract_json_object(raw)
-    if set(payload) != {"appraisal_reasoning", "emotion"}:
-        raise ValueError(
-            "Chain output must contain exactly appraisal_reasoning and emotion"
+    if emotion_mode == "valence-constrained":
+        if set(payload) != {"emotion"}:
+            raise ValueError("Separate output must contain exactly one emotion object")
+        emotion: dict[str, Any] = parse_constrained_emotion(
+            payload["emotion"], allowed_emotions
         )
+        return {"emotion": emotion}
+    else:
+        expected = {"emotion", EVALUATION_ONLY_EMOTION_RANKING_FIELD}
+        if set(payload) != expected:
+            raise ValueError(
+                "Separate valence-free output must contain exactly emotion and "
+                f"{EVALUATION_ONLY_EMOTION_RANKING_FIELD}"
+            )
+        emotion = parse_free_emotion(payload["emotion"])
+        select_free_emotion(emotion)
+        ranking = parse_evaluation_only_emotion_ranking(
+            payload[EVALUATION_ONLY_EMOTION_RANKING_FIELD], emotion
+        )
+        return {
+            "emotion": emotion,
+            EVALUATION_ONLY_EMOTION_RANKING_FIELD: ranking,
+        }
+
+
+def _parse_chain_payload(
+    payload: Any,
+    *,
+    emotion_mode: str,
+    allowed_emotions: tuple[str, ...],
+) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ValueError("Chain output must be an object")
+    expected = {"appraisal_reasoning", "emotion"}
+    if emotion_mode == "valence-free":
+        expected.add(EVALUATION_ONLY_EMOTION_RANKING_FIELD)
+    if set(payload) != expected:
+        raise ValueError(f"Chain output keys mismatch; expected={sorted(expected)}")
     appraisal = parse_appraisal_reasoning(payload["appraisal_reasoning"])
     if emotion_mode == "valence-constrained":
         emotion: dict[str, Any] = parse_constrained_emotion(
@@ -275,7 +352,74 @@ def _parse_chain(
     else:
         emotion = parse_free_emotion(payload["emotion"])
         select_free_emotion(emotion)
+        ranking = parse_evaluation_only_emotion_ranking(
+            payload[EVALUATION_ONLY_EMOTION_RANKING_FIELD], emotion
+        )
+        return {
+            "appraisal_reasoning": appraisal,
+            "emotion": emotion,
+            EVALUATION_ONLY_EMOTION_RANKING_FIELD: ranking,
+        }
     return {"appraisal_reasoning": appraisal, "emotion": emotion}
+
+
+def _parse_chain(
+    raw: str,
+    *,
+    emotion_mode: str,
+    allowed_emotions: tuple[str, ...],
+) -> dict[str, Any]:
+    return _parse_chain_payload(
+        extract_json_object(raw),
+        emotion_mode=emotion_mode,
+        allowed_emotions=allowed_emotions,
+    )
+
+
+def _parse_joint_chain(
+    raw: str,
+    *,
+    emotion_mode: str,
+    allowed_a: tuple[str, ...],
+    allowed_b: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    payload = extract_json_object(raw)
+    if set(payload) != {"agent_a", "agent_b"}:
+        raise ValueError("Joint chain output must contain exactly agent_a and agent_b")
+    return {
+        "A": _parse_chain_payload(
+            payload["agent_a"],
+            emotion_mode=emotion_mode,
+            allowed_emotions=allowed_a,
+        ),
+        "B": _parse_chain_payload(
+            payload["agent_b"],
+            emotion_mode=emotion_mode,
+            allowed_emotions=allowed_b,
+        ),
+    }
+
+
+def _free_output_schema(*, include_appraisal: bool) -> dict[str, Any]:
+    if include_appraisal:
+        return _appraisal_output_schema(
+            _free_emotion_schema(), include_ranking=True
+        )
+    return {
+        "emotion": _free_emotion_schema(),
+        EVALUATION_ONLY_EMOTION_RANKING_FIELD: [
+            "all selected emotion labels, globally ranked"
+        ],
+    }
+
+
+def _select_output_emotion(
+    output: dict[str, Any], emotion_mode: str
+) -> tuple[str, dict[str, Any] | None]:
+    emotion = output["emotion"]
+    if emotion_mode == "valence-constrained":
+        return emotion["label"], None
+    return select_free_emotion(emotion)
 
 
 class CallFailure(RuntimeError):
@@ -333,7 +477,9 @@ def _base_record(item: dict[str, Any], args: argparse.Namespace) -> dict[str, An
         "split": item.get("split"),
         "generation_schema": args.generation_schema,
         "emotion_mode": args.emotion_mode,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": prompt_version(
+            args.generation_schema, args.emotion_mode
+        ),
     }
 
 
@@ -377,8 +523,8 @@ def _generate_direct(
     system, user_template = _template(prompt_cfg, "direct_free")
     output_schema = json.dumps(
         {
-            "agent_a": {"emotion": _free_emotion_schema()},
-            "agent_b": {"emotion": _free_emotion_schema()},
+            "agent_a": _free_output_schema(include_appraisal=False),
+            "agent_b": _free_output_schema(include_appraisal=False),
         },
         ensure_ascii=False,
         indent=2,
@@ -419,6 +565,84 @@ def _generate_direct(
     return record
 
 
+def _separate_prompt(
+    item: dict[str, Any],
+    slot: str,
+    args: argparse.Namespace,
+    prompt_cfg: dict[str, Any],
+) -> tuple[str, str, tuple[str, ...]]:
+    lower = slot.lower()
+    allowed = tuple(item[f"options_{lower}"].values())
+    if args.emotion_mode == "valence-constrained":
+        system, user_template = _template(prompt_cfg, "separate_constrained")
+        emotion_schema: dict[str, Any] = {"label": "one allowed CHIARO label"}
+    else:
+        system, user_template = _template(prompt_cfg, "separate_free")
+        emotion_schema = _free_emotion_schema()
+    output_schema = (
+        {"emotion": emotion_schema}
+        if args.emotion_mode == "valence-constrained"
+        else _free_output_schema(include_appraisal=False)
+    )
+    common = {
+        "sentence": item["sentence"],
+        "target_role": item[f"agent_{lower}_role"],
+        "allowed_emotions": ", ".join(allowed),
+        "positive_labels": ", ".join(POSITIVE_EMOTIONS),
+        "negative_labels": ", ".join(NEGATIVE_EMOTIONS),
+        "output_schema": json.dumps(output_schema, ensure_ascii=False, indent=2),
+    }
+    return system.format(**common), user_template.format(**common), allowed
+
+
+def _generate_separate(
+    item: dict[str, Any],
+    args: argparse.Namespace,
+    prompt_cfg: dict[str, Any],
+    client: TransformersClient,
+) -> dict[str, Any]:
+    outputs: dict[str, dict[str, Any]] = {}
+    traces: dict[str, dict[str, Any]] = {}
+    for slot in ("A", "B"):
+        system, user, allowed = _separate_prompt(item, slot, args, prompt_cfg)
+        parsed, trace = _call_with_retries(
+            client,
+            system,
+            user,
+            lambda raw, allowed=allowed: _parse_separate(
+                raw,
+                emotion_mode=args.emotion_mode,
+                allowed_emotions=allowed,
+            ),
+            args.max_retries,
+        )
+        outputs[slot] = parsed
+        traces[slot] = trace
+
+    label_a, selection_a = _select_output_emotion(outputs["A"], args.emotion_mode)
+    label_b, selection_b = _select_output_emotion(outputs["B"], args.emotion_mode)
+    record = _base_record(item, args)
+    record.update(
+        {
+            "llm_letter_A": letter_for_emotion(item["options_a"], label_a),
+            "llm_emotion_A": label_a,
+            "llm_letter_B": letter_for_emotion(item["options_b"], label_b),
+            "llm_emotion_B": label_b,
+            "agent_a_output": outputs["A"],
+            "agent_b_output": outputs["B"],
+            "raw": {
+                "agent_a": traces["A"]["raw_output"],
+                "agent_b": traces["B"]["raw_output"],
+            },
+            "generation_trace": traces,
+        }
+    )
+    if selection_a is not None and selection_b is not None:
+        record["emotion_selection_A"] = selection_a
+        record["emotion_selection_B"] = selection_b
+    return record
+
+
 def _chain_prompt(
     item: dict[str, Any],
     slot: str,
@@ -442,7 +666,10 @@ def _chain_prompt(
         "allowed_emotions": ", ".join(allowed),
         "positive_labels": ", ".join(POSITIVE_EMOTIONS),
         "negative_labels": ", ".join(NEGATIVE_EMOTIONS),
-        "output_schema": _appraisal_schema(emotion_schema),
+        "output_schema": _appraisal_schema(
+            emotion_schema,
+            include_ranking=args.emotion_mode == "valence-free",
+        ),
     }
     return system.format(**common), user_template.format(**common), allowed
 
@@ -471,16 +698,8 @@ def _generate_chain(
         outputs[slot] = parsed
         traces[slot] = trace
 
-    emotion_a = outputs["A"]["emotion"]
-    emotion_b = outputs["B"]["emotion"]
-    if args.emotion_mode == "valence-constrained":
-        label_a = emotion_a["label"]
-        label_b = emotion_b["label"]
-        selection_a = None
-        selection_b = None
-    else:
-        label_a, selection_a = select_free_emotion(emotion_a)
-        label_b, selection_b = select_free_emotion(emotion_b)
+    label_a, selection_a = _select_output_emotion(outputs["A"], args.emotion_mode)
+    label_b, selection_b = _select_output_emotion(outputs["B"], args.emotion_mode)
     record = _base_record(item, args)
     record.update(
         {
@@ -495,6 +714,102 @@ def _generate_chain(
                 "agent_b": traces["B"]["raw_output"],
             },
             "generation_trace": traces,
+        }
+    )
+    if selection_a is not None and selection_b is not None:
+        record["emotion_selection_A"] = selection_a
+        record["emotion_selection_B"] = selection_b
+    return record
+
+
+def _joint_chain_prompt(
+    item: dict[str, Any],
+    args: argparse.Namespace,
+    prompt_cfg: dict[str, Any],
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    allowed_a = tuple(item["options_a"].values())
+    allowed_b = tuple(item["options_b"].values())
+    appraisal_cfg = prompt_cfg["appraisal"]
+    if args.emotion_mode == "valence-constrained":
+        system, user_template = _template(prompt_cfg, "chain_joint_constrained")
+        emotion_schema_a: dict[str, Any] = {
+            "label": "one allowed emotion for agent A"
+        }
+        emotion_schema_b: dict[str, Any] = {
+            "label": "one allowed emotion for agent B"
+        }
+    else:
+        system, user_template = _template(prompt_cfg, "chain_joint_free")
+        emotion_schema_a = _free_emotion_schema()
+        emotion_schema_b = _free_emotion_schema()
+    output_schema = json.dumps(
+        {
+            "agent_a": _appraisal_output_schema(
+                emotion_schema_a,
+                include_ranking=args.emotion_mode == "valence-free",
+            ),
+            "agent_b": _appraisal_output_schema(
+                emotion_schema_b,
+                include_ranking=args.emotion_mode == "valence-free",
+            ),
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+    common = {
+        "appraisal_dimension_names": appraisal_cfg["dimension_names"],
+        "appraisal_definition_lines": appraisal_cfg["definition_lines"].strip(),
+        "sentence": item["sentence"],
+        "agent_a_role": item["agent_a_role"],
+        "agent_b_role": item["agent_b_role"],
+        "allowed_emotions_a": ", ".join(allowed_a),
+        "allowed_emotions_b": ", ".join(allowed_b),
+        "positive_labels": ", ".join(POSITIVE_EMOTIONS),
+        "negative_labels": ", ".join(NEGATIVE_EMOTIONS),
+        "output_schema": output_schema,
+    }
+    return (
+        system.format(**common),
+        user_template.format(**common),
+        allowed_a,
+        allowed_b,
+    )
+
+
+def _generate_joint_chain(
+    item: dict[str, Any],
+    args: argparse.Namespace,
+    prompt_cfg: dict[str, Any],
+    client: TransformersClient,
+) -> dict[str, Any]:
+    system, user, allowed_a, allowed_b = _joint_chain_prompt(
+        item, args, prompt_cfg
+    )
+    outputs, trace = _call_with_retries(
+        client,
+        system,
+        user,
+        lambda raw: _parse_joint_chain(
+            raw,
+            emotion_mode=args.emotion_mode,
+            allowed_a=allowed_a,
+            allowed_b=allowed_b,
+        ),
+        args.max_retries,
+    )
+    label_a, selection_a = _select_output_emotion(outputs["A"], args.emotion_mode)
+    label_b, selection_b = _select_output_emotion(outputs["B"], args.emotion_mode)
+    record = _base_record(item, args)
+    record.update(
+        {
+            "llm_letter_A": letter_for_emotion(item["options_a"], label_a),
+            "llm_emotion_A": label_a,
+            "llm_letter_B": letter_for_emotion(item["options_b"], label_b),
+            "llm_emotion_B": label_b,
+            "agent_a_output": outputs["A"],
+            "agent_b_output": outputs["B"],
+            "raw": trace["raw_output"],
+            "generation_trace": trace,
         }
     )
     if selection_a is not None and selection_b is not None:
@@ -525,7 +840,10 @@ def _load_existing(
                 f"Existing prediction {item_id} uses another emotion_mode; "
                 "pass --overwrite_predictions or choose another output file"
             )
-        if record.get("prompt_version") != PROMPT_VERSION:
+        expected_prompt_version = prompt_version(
+            args.generation_schema, args.emotion_mode
+        )
+        if record.get("prompt_version") != expected_prompt_version:
             raise ValueError(
                 f"Existing prediction {item_id} uses another prompt_version; "
                 "pass --overwrite_predictions or choose another output file"
@@ -570,7 +888,9 @@ def execute(args: argparse.Namespace) -> int:
         }
     )
     pending = [item for item in items if str(item["id"]) not in prediction_by_id]
-    calls_per_scene = 1 if args.generation_schema == "direct" else 2
+    calls_per_scene = (
+        1 if args.generation_schema in {"direct", "chain-joint"} else 2
+    )
     print(
         f"[generate] scenes={len(items)} cached={len(items) - len(pending)} "
         f"pending={len(pending)} schema={args.generation_schema} "
@@ -597,8 +917,12 @@ def execute(args: argparse.Namespace) -> int:
         try:
             if args.generation_schema == "direct":
                 record = _generate_direct(item, args, prompt_cfg, client)
-            else:
+            elif args.generation_schema == "separate":
+                record = _generate_separate(item, args, prompt_cfg, client)
+            elif args.generation_schema == "chain":
                 record = _generate_chain(item, args, prompt_cfg, client)
+            else:
+                record = _generate_joint_chain(item, args, prompt_cfg, client)
             prediction_by_id[item_id] = record
             invalid_by_id.pop(item_id, None)
             valid_new += 1
