@@ -25,17 +25,17 @@ from chiaro_common import (
     letter_for_emotion,
     load_chiaro_items,
     parse_appraisal_reasoning,
+    parse_constrained_emotion,
     parse_free_emotion,
     read_prediction_records,
     select_free_emotion,
-    select_valence_constrained_emotion,
     write_prediction_records,
 )
 
 
 DEFAULT_EVAL_FILE = REPO_ROOT / "Chiaro-main" / "data" / "chiaro_test.json"
 DEFAULT_PROMPT_FILE = UTILS_DIR / "prompts" / "chiaro_prompt.toml"
-PROMPT_VERSION = "chiaro-caeu-0.3"
+PROMPT_VERSION = "chiaro-caeu-0.4"
 
 
 def str2bool(value: str | bool) -> bool:
@@ -79,10 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["valence-constrained", "valence-free"],
         default="valence-constrained",
         help=(
-            "For direct, valence-constrained exposes each role's five official "
-            "options. For chain, both modes generate all 10 labels in CAREBench "
-            "format; constrained selects from the official target valence, while "
-            "free selects the higher-intensity valence."
+            "valence-constrained exposes each role's five same-valence CHIARO "
+            "options; valence-free exposes all 10 labels in CAREBench format."
         ),
     )
     parser.add_argument("--eval_file", type=Path, default=DEFAULT_EVAL_FILE)
@@ -270,10 +268,12 @@ def _parse_chain(
             "Chain output must contain exactly appraisal_reasoning and emotion"
         )
     appraisal = parse_appraisal_reasoning(payload["appraisal_reasoning"])
-    emotion = parse_free_emotion(payload["emotion"])
     if emotion_mode == "valence-constrained":
-        select_valence_constrained_emotion(emotion, allowed_emotions)
+        emotion: dict[str, Any] = parse_constrained_emotion(
+            payload["emotion"], allowed_emotions
+        )
     else:
+        emotion = parse_free_emotion(payload["emotion"])
         select_free_emotion(emotion)
     return {"appraisal_reasoning": appraisal, "emotion": emotion}
 
@@ -430,7 +430,7 @@ def _chain_prompt(
     appraisal_cfg = prompt_cfg["appraisal"]
     if args.emotion_mode == "valence-constrained":
         system, user_template = _template(prompt_cfg, "chain_constrained")
-        emotion_schema: dict[str, Any] = _free_emotion_schema()
+        emotion_schema: dict[str, Any] = {"label": "one allowed CHIARO label"}
     else:
         system, user_template = _template(prompt_cfg, "chain_free")
         emotion_schema = _free_emotion_schema()
@@ -474,12 +474,10 @@ def _generate_chain(
     emotion_a = outputs["A"]["emotion"]
     emotion_b = outputs["B"]["emotion"]
     if args.emotion_mode == "valence-constrained":
-        label_a, selection_a = select_valence_constrained_emotion(
-            emotion_a, tuple(item["options_a"].values())
-        )
-        label_b, selection_b = select_valence_constrained_emotion(
-            emotion_b, tuple(item["options_b"].values())
-        )
+        label_a = emotion_a["label"]
+        label_b = emotion_b["label"]
+        selection_a = None
+        selection_b = None
     else:
         label_a, selection_a = select_free_emotion(emotion_a)
         label_b, selection_b = select_free_emotion(emotion_b)
@@ -499,8 +497,9 @@ def _generate_chain(
             "generation_trace": traces,
         }
     )
-    record["emotion_selection_A"] = selection_a
-    record["emotion_selection_B"] = selection_b
+    if selection_a is not None and selection_b is not None:
+        record["emotion_selection_A"] = selection_a
+        record["emotion_selection_B"] = selection_b
     return record
 
 

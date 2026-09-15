@@ -1,5 +1,5 @@
 [meta]
-version = "0.3"
+version = "0.4"
 
 [appraisal]
 dimension_names = "relevance, epistemic, goal congruence, agency/accountability, control/coping potential"
@@ -85,15 +85,8 @@ Reason about how you appraised this situation along the following dimensions:
 
 Write one concise first-person appraisal for each dimension.
 
-Then report your emotion using the following format:
-- positive_intensity: integer from 0 to 6
-- negative_intensity: integer from 0 to 6
-- positive_labels: zero or more labels from: {positive_labels}
-- negative_labels: zero or more labels from: {negative_labels}
-
-Order the label arrays from most to least likely within each valence.
-Do not assume whether the emotion is positive or negative from the task setup.
-Because evaluation requires one final label, when both label arrays are non-empty, use unequal intensities to indicate which valence contains your single most likely emotion.
+Then choose exactly one emotion from these CHIARO options:
+{allowed_emotions}
 
 Return exactly this structure and no other keys:
 {output_schema}"""

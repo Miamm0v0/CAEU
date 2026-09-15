@@ -11,13 +11,11 @@ CHIARO test set. Generation and metric computation are separate.
 - `chain`: two calls per scene, one from each agent's perspective, with the five
   CAEU appraisal dimensions before emotion prediction.
 
-`--emotion_mode` controls how the final CHIARO label is selected:
+`--emotion_mode` controls access to gold valence:
 
 - `valence-constrained`: expose the five official same-valence MCQ options for
-  each agent in `direct`, which uses the official CHIARO prompt and two-line
-  response. In `chain`, the model emits the same unrestricted CAREBench-style
-  emotion object as `valence-free`; evaluation takes the first ranked label
-  from the role's official target-valence list.
+  each agent. `direct` uses the official CHIARO prompt and two-line response;
+  `chain` adds first-person appraisal reasoning before selecting one option.
 - `valence-free`: expose all 10 CHIARO labels without identifying the target
   agent's valence. Each agent emits CAREBench-style positive/negative label
   lists and intensities. Scoring selects the first ranked label from the side
