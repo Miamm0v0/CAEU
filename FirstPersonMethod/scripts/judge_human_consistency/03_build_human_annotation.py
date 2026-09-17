@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Create blinded human-annotation packets from ``master_samples.jsonl``.
 
-The instructions embed the exact text returned by the current training
-``build_judge_system_prompt``.  Consequently the human task cannot silently
-drift away from the Judge rubric or its 0--4 anchors.
+The instructions extract the scoring-rubric portion from the exact text
+returned by the current training ``build_judge_system_prompt``. Consequently
+the human task cannot silently drift away from the Judge rubric or its 0--4
+anchors, while API-only rationale/JSON requirements are not imposed on people.
 """
 
 from __future__ import annotations
@@ -104,17 +105,18 @@ def parse_annotator_ids(value: str) -> list[str]:
 
 
 def blank_judgment(dimensions: Sequence[str]) -> dict[str, Any]:
-    # Derive the annotation shape from the training template, then blank every
-    # placeholder.  No rubric fields are independently re-declared here.
+    # Derive every scoring field from the training template. Human annotators
+    # provide the same 17 scores, but are not burdened with 17 rationales.
     template = judge_output_example(dimensions)
     for criteria in template["appraisals"].values():
         for item in criteria.values():
             item["score"] = None
-            item["rationale"] = ""
+            item.pop("rationale", None)
     for section in ("coherence", "transition"):
         template[section]["score"] = None
-        template[section]["rationale"] = ""
-    template["overall_feedback"] = ""
+        template[section].pop("rationale", None)
+    template.pop("overall_feedback", None)
+    template["overall_notes"] = ""
     return template
 
 
@@ -141,6 +143,24 @@ def main() -> int:
         set(candidate_ids)
     ):
         raise ValueError("master candidate_id values must be non-empty and unique")
+    reference_by_candidate: dict[str, dict[str, Any]] = {}
+    for row in master_rows:
+        raw_reference = row.get("reference_json")
+        if not isinstance(raw_reference, str) or not raw_reference.strip():
+            raise ValueError(
+                "master contains no reference_json; rerun 01_prepare_samples.py"
+            )
+        try:
+            reference = json.loads(raw_reference)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"{row['candidate_id']}: invalid reference_json: {exc.msg}"
+            ) from exc
+        if not isinstance(reference, dict):
+            raise ValueError(
+                f"{row['candidate_id']}: reference_json must be an object"
+            )
+        reference_by_candidate[row["candidate_id"]] = reference
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output_paths = [
@@ -163,21 +183,31 @@ def main() -> int:
 
     exact_prompt = build_judge_system_prompt(dimensions)
     prompt_sha = hashlib.sha256(exact_prompt.encode("utf-8")).hexdigest()
+    rubric_text, separator, _ = exact_prompt.partition("OUTPUT FORMAT IS STRICT:")
+    if not separator:
+        raise RuntimeError(
+            "Could not isolate the scoring rubric from the training Judge prompt"
+        )
     instructions = f"""# Human annotation instructions
 
 This packet is blinded. Do not try to infer model identity, and do not consult
-the private `identity_key.json`. Score only the displayed situation and
-candidate. No CAREBench gold appraisal or emotion annotation is supplied.
+the private `identity_key.json`. Score the displayed situation, human appraisal
+reference, and candidate. This is the same semantic evidence supplied to the
+training API Judge. The internal gold emotion is not shown because the API
+Judge does not receive it either.
 
-Fill every `judgment.*.score` with an integer from 0 to 4 and every
-`rationale` plus `overall_feedback` with non-empty evidence-based text. Do not
-change IDs, situations, candidates, key names, or row order.
+Fill all 17 `judgment.*.score` fields with integers from 0 to 4. You do **not**
+need to write a rationale for every score. `overall_notes` is optional and may
+be left empty. Do not change IDs, situations, references, candidates, key
+names, or row order.
 
-The following rubric is the **verbatim current GRPO training Judge prompt**
-(`rubric_version={RUBRIC_VERSION}`, SHA-256 `{prompt_sha}`):
+The following is the **verbatim scoring-rubric and anchor portion** of the
+current GRPO training Judge prompt (`rubric_version={RUBRIC_VERSION}`, full
+prompt SHA-256 `{prompt_sha}`). The automated JSON/rationale output contract is
+intentionally omitted; only its human-irrelevant formatting requirement differs.
 
 ```text
-{exact_prompt}
+{rubric_text.strip()}
 ```
 """
     instructions_path.write_text(instructions, encoding="utf-8")
@@ -185,9 +215,13 @@ The following rubric is the **verbatim current GRPO training Judge prompt**
     for annotator_id, output_path in zip(annotator_ids, output_paths):
         packet: list[dict[str, Any]] = []
         for row in shuffled_for_annotator(master_rows, annotator_id, args.seed):
+            reference = reference_by_candidate[row["candidate_id"]]
+            appraisal_reference = reference.get(
+                "legacy_human_appraisal_reasoning"
+            )
             packet.append(
                 {
-                    "schema_version": "judge-human-annotation-v1",
+                    "schema_version": "judge-human-annotation-v2",
                     "rubric_version": RUBRIC_VERSION,
                     "rubric_prompt_sha256": prompt_sha,
                     "annotator_id": annotator_id,
@@ -197,6 +231,11 @@ The following rubric is the **verbatim current GRPO training Judge prompt**
                     "candidate_slot": row.get("candidate_slot"),
                     "source_sample_id": row.get("source_sample_id"),
                     "situation": row.get("situation"),
+                    "optional_human_appraisal_reference": (
+                        appraisal_reference
+                        if isinstance(appraisal_reference, dict)
+                        else None
+                    ),
                     "candidate": row.get("candidate"),
                     "judgment": blank_judgment(dimensions),
                 }
@@ -206,7 +245,7 @@ The following rubric is the **verbatim current GRPO training Judge prompt**
     write_json(
         manifest_path,
         {
-            "schema_version": "judge-human-annotation-manifest-v1",
+            "schema_version": "judge-human-annotation-manifest-v2",
             "rubric_version": RUBRIC_VERSION,
             "rubric_prompt_sha256": prompt_sha,
             "appraisal_dimensions": dimensions,
@@ -214,7 +253,18 @@ The following rubric is the **verbatim current GRPO training Judge prompt**
             "candidate_count_per_annotator": len(master_rows),
             "assignment_mode": "all_annotators_rate_all_candidates",
             "model_identity_included": False,
-            "gold_annotations_included": False,
+            "appraisal_reference_included": True,
+            "appraisal_reference_candidate_count": sum(
+                isinstance(
+                    reference.get("legacy_human_appraisal_reasoning"), dict
+                )
+                for reference in reference_by_candidate.values()
+            ),
+            "gold_emotion_included": False,
+            "rationales_required": False,
+            "required_score_count_per_candidate": (
+                len(dimensions) * 3 + 2
+            ),
             "annotation_files": [str(path.resolve()) for path in output_paths],
             "instructions_file": str(instructions_path.resolve()),
         },

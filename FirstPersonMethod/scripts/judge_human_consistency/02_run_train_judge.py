@@ -78,13 +78,13 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["auto", "max_completion_tokens", "max_tokens"],
         default="auto",
     )
-    parser.add_argument("--judge_max_tokens", type=int, default=5000)
+    parser.add_argument("--judge_max_tokens", type=int, default=2500)
     parser.add_argument("--judge_temperature", type=float, default=0.0)
     parser.add_argument("--judge_omit_temperature", action="store_true")
     parser.add_argument(
         "--judge_thinking",
         choices=["auto", "enabled", "disabled"],
-        default="disabled",
+        default="auto",
     )
     parser.add_argument("--judge_timeout_seconds", type=float, default=180.0)
     parser.add_argument("--judge_max_retries", type=int, default=3)
@@ -151,7 +151,7 @@ async def score_row(
 ) -> dict[str, Any]:
     candidate_id = str(row.get("candidate_id", ""))
     base = {
-        "schema_version": "judge-human-train-judge-v1",
+        "schema_version": "judge-human-train-judge-v2",
         "rubric_version": RUBRIC_VERSION,
         "judge_prompt_sha256": prompt_sha,
         "pair_id": row.get("pair_id"),
@@ -166,12 +166,27 @@ async def score_row(
         candidate = parse_policy_output(
             json.dumps(row.get("candidate"), ensure_ascii=False), dimensions
         )
+        raw_reference = row.get("reference_json")
+        if not isinstance(raw_reference, str) or not raw_reference.strip():
+            raise ValueError(
+                "reference_json is missing; recreate master_samples.jsonl "
+                "with the updated 01_prepare_samples.py"
+            )
+        reference = json.loads(raw_reference)
+        if not isinstance(reference, dict):
+            raise ValueError("reference_json must decode to an object")
+        if "gold_emotion" not in reference:
+            raise ValueError(
+                "reference_json lacks gold_emotion and is not a GRPO reference"
+            )
         result = await judge.score_valid_candidate(
             sample_id=candidate_id,
             situation=situation.strip(),
             candidate=candidate,
-            # Deliberately no CAREBench gold/reference in this study.
-            reference={},
+            # This is the exact hidden-reference object constructed for GRPO.
+            # APIJudge.request_messages() exposes only its appraisal reference;
+            # gold_emotion remains local, exactly as it does during training.
+            reference=reference,
         )
         # Re-run the exact public parser and aggregator so schema/reward drift
         # fails loudly rather than silently changing the study definition.
@@ -191,6 +206,10 @@ async def score_row(
             **base,
             "status": "ok",
             "candidate_sha256": candidate_sha(candidate),
+            "reference_sha256": candidate_sha(reference),
+            "appraisal_reference_provided": bool(
+                reference.get("legacy_human_appraisal_reasoning")
+            ),
             "judgment": judgment,
             **aggregate,
             "request_id": result.get("request_id"),
@@ -208,6 +227,24 @@ async def run(args: argparse.Namespace) -> int:
     ids = [str(row.get("candidate_id", "")) for row in rows]
     if any(not value for value in ids) or len(ids) != len(set(ids)):
         raise ValueError("master candidate_id values must be non-empty and unique")
+    reference_objects: list[dict[str, Any]] = []
+    for row in rows:
+        raw_reference = row.get("reference_json")
+        if not isinstance(raw_reference, str) or not raw_reference.strip():
+            raise ValueError(
+                "master contains no reference_json; rerun 01_prepare_samples.py"
+            )
+        try:
+            reference = json.loads(raw_reference)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"{row.get('candidate_id')}: invalid reference_json: {exc.msg}"
+            ) from exc
+        if not isinstance(reference, dict) or "gold_emotion" not in reference:
+            raise ValueError(
+                f"{row.get('candidate_id')}: incomplete GRPO reference_json"
+            )
+        reference_objects.append(reference)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     results_path = args.output_dir / "judge_results.jsonl"
@@ -239,7 +276,12 @@ async def run(args: argparse.Namespace) -> int:
             "judge_system_prompt": prompt,
             "candidate_count": len(rows),
             "pending_count": len(pending),
-            "gold_reference_used": False,
+            "reference_provided_to_api_judge": True,
+            "appraisal_reference_candidate_count": sum(
+                bool(reference.get("legacy_human_appraisal_reasoning"))
+                for reference in reference_objects
+            ),
+            "gold_emotion_present_but_not_sent_to_api_judge": True,
         }
         print(json.dumps(preview, ensure_ascii=False, indent=2))
         return 0
@@ -301,7 +343,12 @@ async def run(args: argparse.Namespace) -> int:
             "judge_model": settings["model"],
             "candidate_count": len(rows),
             "status_counts": dict(status_counts),
-            "gold_reference_used": False,
+            "reference_provided_to_api_judge": True,
+            "appraisal_reference_candidate_count": sum(
+                bool(reference.get("legacy_human_appraisal_reasoning"))
+                for reference in reference_objects
+            ),
+            "gold_emotion_present_but_not_sent_to_api_judge": True,
             "errors": errors,
         },
     )

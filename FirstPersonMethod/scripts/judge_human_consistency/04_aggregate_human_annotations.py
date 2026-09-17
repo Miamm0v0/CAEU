@@ -18,10 +18,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from train_grpo.parsing import (  # noqa: E402
-    aggregate_judgment,
-    parse_judge_output,
-)
+from train_grpo.parsing import aggregate_judgment  # noqa: E402
 from train_grpo.spec import (  # noqa: E402
     APPRAISAL_CRITERIA,
     COHERENCE_CRITERION,
@@ -106,6 +103,95 @@ def rubric_item_names(dimensions: Sequence[str]) -> list[str]:
         for dimension in dimensions
         for criterion in APPRAISAL_CRITERIA
     ] + [COHERENCE_CRITERION, TRANSITION_CRITERION]
+
+
+def require_exact_mapping(
+    value: Any, expected: set[str], location: str
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{location} must be an object")
+    actual = set(value)
+    if actual != expected:
+        raise ValueError(
+            f"{location} keys mismatch: missing={sorted(expected - actual)}, "
+            f"extra={sorted(actual - expected)}"
+        )
+    return value
+
+
+def parse_human_score_item(value: Any, location: str) -> dict[str, Any]:
+    """Validate a required 0--4 score with an optional rationale."""
+    if isinstance(value, bool):
+        raise ValueError(f"{location}.score must be an integer in [0, 4]")
+    if isinstance(value, int):
+        score = value
+        rationale = ""
+    elif isinstance(value, dict):
+        if "score" not in value:
+            raise ValueError(f"{location}.score is required")
+        extra = set(value) - {"score", "rationale"}
+        if extra:
+            raise ValueError(f"{location} has extra keys: {sorted(extra)}")
+        score = value["score"]
+        rationale = value.get("rationale", "")
+    else:
+        raise ValueError(f"{location} must be an integer or score object")
+    if isinstance(score, bool) or not isinstance(score, int) or not 0 <= score <= 4:
+        raise ValueError(f"{location}.score must be an integer in [0, 4]")
+    if rationale is None:
+        rationale = ""
+    if not isinstance(rationale, str):
+        raise ValueError(f"{location}.rationale must be a string when provided")
+    return {"score": score, "rationale": rationale.strip()}
+
+
+def parse_human_judgment(
+    value: Any, dimensions: Sequence[str]
+) -> dict[str, Any]:
+    """Normalize the low-burden human form to the training-Judge structure."""
+    if not isinstance(value, dict):
+        raise ValueError("judgment must be an object")
+    required_root = {"appraisals", "coherence", "transition"}
+    optional_root = {"overall_notes", "overall_feedback"}
+    missing = required_root - set(value)
+    extra = set(value) - required_root - optional_root
+    if missing or extra:
+        raise ValueError(
+            f"judgment keys mismatch: missing={sorted(missing)}, "
+            f"extra={sorted(extra)}"
+        )
+    appraisals = require_exact_mapping(
+        value["appraisals"], set(dimensions), "judgment.appraisals"
+    )
+    normalized_appraisals: dict[str, Any] = {}
+    for dimension in dimensions:
+        criteria = require_exact_mapping(
+            appraisals[dimension],
+            set(APPRAISAL_CRITERIA),
+            f"judgment.appraisals.{dimension}",
+        )
+        normalized_appraisals[dimension] = {
+            criterion: parse_human_score_item(
+                criteria[criterion],
+                f"judgment.appraisals.{dimension}.{criterion}",
+            )
+            for criterion in APPRAISAL_CRITERIA
+        }
+    notes = value.get("overall_notes", value.get("overall_feedback", ""))
+    if notes is None:
+        notes = ""
+    if not isinstance(notes, str):
+        raise ValueError("judgment.overall_notes must be a string when provided")
+    return {
+        "appraisals": normalized_appraisals,
+        "coherence": parse_human_score_item(
+            value["coherence"], "judgment.coherence"
+        ),
+        "transition": parse_human_score_item(
+            value["transition"], "judgment.transition"
+        ),
+        "overall_feedback": notes.strip(),
+    }
 
 
 def extract_scores(
@@ -257,10 +343,13 @@ def consensus_judgment(
             float(score_item(judgment, item_name)["score"])
             for _, judgment in annotations
         ]
-        rationales = [
-            f"[{annotator_id}] {score_item(judgment, item_name)['rationale']}"
-            for annotator_id, judgment in annotations
-        ]
+        rationales = []
+        for annotator_id, judgment in annotations:
+            rationale = str(
+                score_item(judgment, item_name).get("rationale", "")
+            ).strip()
+            if rationale:
+                rationales.append(f"[{annotator_id}] {rationale}")
         return {
             "score": statistics.mean(values),
             "rationale": " || ".join(rationales),
@@ -281,6 +370,7 @@ def consensus_judgment(
         "overall_feedback": " || ".join(
             f"[{annotator_id}] {judgment['overall_feedback']}"
             for annotator_id, judgment in annotations
+            if judgment.get("overall_feedback", "").strip()
         ),
     }
     return result
@@ -336,6 +426,7 @@ def main() -> int:
             raise ValueError(f"duplicate annotator file for {annotator_id}")
         annotator_ids.append(annotator_id)
         accepted = 0
+        provided_rationales = 0
         for row in rows:
             candidate_id = str(row.get("candidate_id", ""))
             location = f"{row['_source_file']}:{row['_line_number']}"
@@ -350,9 +441,8 @@ def main() -> int:
                 )
                 continue
             try:
-                judgment = parse_judge_output(
-                    json.dumps(row.get("judgment"), ensure_ascii=False),
-                    dimensions,
+                judgment = parse_human_judgment(
+                    row.get("judgment"), dimensions
                 )
             except (TypeError, ValueError) as exc:
                 invalid_rows.append(
@@ -365,6 +455,10 @@ def main() -> int:
                 )
                 continue
             annotations[candidate_id][annotator_id] = judgment
+            provided_rationales += sum(
+                bool(score_item(judgment, item_name)["rationale"])
+                for item_name in rubric_item_names(dimensions)
+            )
             accepted += 1
         file_summaries.append(
             {
@@ -372,6 +466,8 @@ def main() -> int:
                 "annotator_id": annotator_id,
                 "row_count": len(rows),
                 "accepted_count": accepted,
+                "provided_item_rationale_count": provided_rationales,
+                "item_rationales_required": False,
             }
         )
 
@@ -409,7 +505,7 @@ def main() -> int:
         rewards = aggregate_judgment(consensus, dimensions)
         consensus_rows.append(
             {
-                "schema_version": "judge-human-consensus-v1",
+                "schema_version": "judge-human-consensus-v2",
                 "rubric_version": RUBRIC_VERSION,
                 "pair_id": source.get("pair_id"),
                 "candidate_id": candidate_id,
@@ -449,7 +545,7 @@ def main() -> int:
         }
     pooled_kappas = pairwise_kappas(pooled_units, annotator_ids)
     agreement = {
-        "schema_version": "judge-human-agreement-v1",
+        "schema_version": "judge-human-agreement-v2",
         "rubric_version": RUBRIC_VERSION,
         "appraisal_dimensions": dimensions,
         "annotator_ids": annotator_ids,
@@ -475,7 +571,7 @@ def main() -> int:
     write_json(
         qc_path,
         {
-            "schema_version": "judge-human-qc-v1",
+            "schema_version": "judge-human-qc-v2",
             "rubric_version": RUBRIC_VERSION,
             "master_candidate_count": len(master),
             "consensus_candidate_count": len(consensus_rows),

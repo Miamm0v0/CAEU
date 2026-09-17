@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Build a blinded, paired Base/CAEU sample set for Judge validation.
 
-Only ``story_collection.final_scenario`` is read from CAREBench.  Gold
-appraisals, ratings, and emotions are intentionally never loaded.  Candidate
-outputs are normalized to the current Policy schema and validated by the same
-``parse_policy_output`` function used during GRPO.
+Candidate outputs are validated by the GRPO ``parse_policy_output`` function.
+The hidden Judge reference is produced from the organized CAREBench test split
+by the same ``normalize_policy_record``/``build_hidden_reference`` path used in
+GRPO.  The human packets expose the same appraisal reference seen by the API
+Judge, but never expose the internal gold emotion that the API Judge also does
+not receive in its request message.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from train_grpo.parsing import parse_policy_output  # noqa: E402
+from train_grpo.data import load_records, normalize_policy_record  # noqa: E402
 from train_grpo.spec import (  # noqa: E402
     CAREBENCH_REASONING_KEYS,
     RUBRIC_VERSION,
@@ -41,6 +44,15 @@ def build_parser() -> argparse.ArgumentParser:
         description="Prepare paired, blinded Base/CAEU CAREBench candidates"
     )
     parser.add_argument("--source_folder", type=Path, required=True)
+    parser.add_argument(
+        "--reference_file",
+        type=Path,
+        required=True,
+        help=(
+            "Organized CAREBench test JSON/JSONL used by GRPO, containing id, "
+            "situation, appraisal_reasoning, and emotion"
+        ),
+    )
     parser.add_argument("--base_pred_folder", type=Path, required=True)
     parser.add_argument("--caeu_pred_folder", type=Path, required=True)
     parser.add_argument(
@@ -62,6 +74,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum number of paired CAREBench situations",
     )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--judge_reference_mode",
+        choices=["none", "available", "required"],
+        default="available",
+        help="Same semantics and default as train_grpo/config.py",
+    )
     parser.add_argument(
         "--invalid_policy",
         choices=["skip", "error"],
@@ -115,6 +133,30 @@ def load_situations(source_folder: Path) -> list[dict[str, str]]:
     if not rows:
         raise ValueError(f"No JSON samples found in {source_folder}")
     return rows
+
+
+def load_grpo_reference_examples(
+    reference_file: Path,
+    dimensions: list[str],
+    reference_mode: str,
+) -> dict[str, dict[str, Any]]:
+    """Run the exact GRPO record normalization/reference construction path."""
+    records = load_records(str(reference_file))
+    examples: dict[str, dict[str, Any]] = {}
+    for index, record in enumerate(records):
+        example = normalize_policy_record(
+            record,
+            index,
+            reference_mode,
+            dimensions,
+        )
+        sample_id = example["sample_id"]
+        if sample_id in examples:
+            raise ValueError(
+                f"{reference_file}: duplicate sample id {sample_id}"
+            )
+        examples[sample_id] = example
+    return examples
 
 
 def prediction_path(root: Path, task: str, sample_id: str) -> Path:
@@ -189,6 +231,11 @@ def main() -> int:
     valid_pairs: list[dict[str, Any]] = []
     rejected: list[dict[str, str]] = []
     situations = load_situations(args.source_folder)
+    reference_examples = load_grpo_reference_examples(
+        args.reference_file,
+        dimensions,
+        args.judge_reference_mode,
+    )
     systems = (
         ("base", args.base_pred_folder, args.base_prediction_task),
         ("caeu", args.caeu_pred_folder, args.caeu_prediction_task),
@@ -196,6 +243,15 @@ def main() -> int:
     for source in situations:
         loaded: dict[str, dict[str, Any]] = {}
         pair_errors: list[str] = []
+        reference_example = reference_examples.get(source["sample_id"])
+        if reference_example is None:
+            pair_errors.append(
+                "reference: sample is missing from organized --reference_file"
+            )
+        elif reference_example["situation"] != source["situation"]:
+            pair_errors.append(
+                "reference: situation differs between raw and organized test data"
+            )
         for system, root, task in systems:
             try:
                 path = prediction_path(root, task, source["sample_id"])
@@ -224,6 +280,7 @@ def main() -> int:
             {
                 "source_sample_id": source["sample_id"],
                 "situation": source["situation"],
+                "reference_json": reference_example["reference_json"],
                 "systems": loaded,
             }
         )
@@ -247,7 +304,7 @@ def main() -> int:
             )
             master_rows.append(
                 {
-                    "schema_version": "judge-human-master-v1",
+                    "schema_version": "judge-human-master-v2",
                     "rubric_version": RUBRIC_VERSION,
                     "pair_id": pair_id,
                     "candidate_id": candidate_id,
@@ -255,6 +312,10 @@ def main() -> int:
                     "source_sample_id": sample_id,
                     "situation": pair["situation"],
                     "candidate": pair["systems"][system]["candidate"],
+                    # 03 exposes only legacy_human_appraisal_reasoning, which
+                    # is exactly what APIJudge.request_messages() exposes. It
+                    # never copies gold_emotion into annotator packets.
+                    "reference_json": pair["reference_json"],
                 }
             )
             candidates[slot] = {
@@ -285,7 +346,21 @@ def main() -> int:
         "candidate_count": len(master_rows),
         "rejected_pair_count": len(rejected),
         "rejected_pairs": rejected,
-        "gold_annotations_read": False,
+        "reference_file": str(args.reference_file.resolve()),
+        "judge_reference_mode": args.judge_reference_mode,
+        "reference_record_count": len(reference_examples),
+        "selected_with_appraisal_reference_count": sum(
+            "legacy_human_appraisal_reasoning"
+            in json.loads(pair["reference_json"])
+            for pair in selected
+        ),
+        "selected_with_gold_emotion_count": sum(
+            "gold_emotion" in json.loads(pair["reference_json"])
+            for pair in selected
+        ),
+        "gold_annotations_read_for_grpo_reference": True,
+        "appraisal_reference_available_to_human_packet_builder": True,
+        "gold_emotion_exposed_to_api_or_human_judge": False,
         "master_file": str(master_path.resolve()),
         "private_identity_key": str(key_path.resolve()),
     }
