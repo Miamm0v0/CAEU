@@ -20,6 +20,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from train_grpo.reward_components import compute_process_gate  # noqa: E402
 from train_grpo.spec import (  # noqa: E402
     APPRAISAL_CRITERIA,
     COHERENCE_CRITERION,
@@ -55,6 +56,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--bootstrap_iterations", type=int, default=10000)
     parser.add_argument("--confidence_level", type=float, default=0.95)
+    parser.add_argument(
+        "--process_gate_mode",
+        choices=["min", "product", "geometric_mean"],
+        default="min",
+        help="Must match the GRPO run; default matches train_grpo/config.py",
+    )
+    process_gate = parser.add_mutually_exclusive_group()
+    process_gate.add_argument(
+        "--use_process_gate",
+        dest="use_process_gate",
+        action="store_true",
+        help="Analyze the enabled GRPO process gate (default)",
+    )
+    process_gate.add_argument(
+        "--no_process_gate",
+        dest="use_process_gate",
+        action="store_false",
+        help="Match a GRPO run trained with --no_process_gate",
+    )
+    parser.set_defaults(use_process_gate=True)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--overwrite", action="store_true")
     return parser
@@ -194,6 +215,19 @@ def spearman(left: Sequence[float], right: Sequence[float]) -> float | None:
     return pearson(average_ranks(left), average_ranks(right))
 
 
+def mean_absolute_error(
+    left: Sequence[float], right: Sequence[float]
+) -> float | None:
+    if len(left) != len(right) or not left:
+        return None
+    return float(
+        statistics.mean(
+            abs(left_value - right_value)
+            for left_value, right_value in zip(left, right)
+        )
+    )
+
+
 def percentile(sorted_values: Sequence[float], probability: float) -> float:
     if not sorted_values:
         raise ValueError("percentile requires values")
@@ -248,28 +282,167 @@ def correlation_result(
     iterations: int,
     confidence_level: float,
     seed: int,
+    score_range: float,
 ) -> dict[str, Any]:
     records = [record for group in pair_groups for record in group]
 
-    def calculate(groups: Sequence[Sequence[Mapping[str, Any]]]) -> float | None:
+    def paired_values(
+        groups: Sequence[Sequence[Mapping[str, Any]]],
+    ) -> tuple[list[float], list[float]]:
         flattened = [record for group in groups for record in group]
-        return spearman(
+        return (
             [judge_getter(record) for record in flattened],
             [human_getter(record) for record in flattened],
         )
 
-    estimate = calculate(pair_groups)
-    low, high, valid = bootstrap_ci(
-        pair_groups, calculate, iterations, confidence_level, seed
+    def calculate_spearman(
+        groups: Sequence[Sequence[Mapping[str, Any]]],
+    ) -> float | None:
+        judge_values, human_values = paired_values(groups)
+        return spearman(judge_values, human_values)
+
+    def calculate_mae(
+        groups: Sequence[Sequence[Mapping[str, Any]]],
+    ) -> float | None:
+        judge_values, human_values = paired_values(groups)
+        return mean_absolute_error(judge_values, human_values)
+
+    if score_range <= 0:
+        raise ValueError("score_range must be positive")
+    spearman_estimate = calculate_spearman(pair_groups)
+    spearman_low, spearman_high, spearman_valid = bootstrap_ci(
+        pair_groups,
+        calculate_spearman,
+        iterations,
+        confidence_level,
+        seed,
+    )
+    mae_estimate = calculate_mae(pair_groups)
+    mae_low, mae_high, mae_valid = bootstrap_ci(
+        pair_groups,
+        calculate_mae,
+        iterations,
+        confidence_level,
+        seed + 1,
     )
     return {
         "n_candidates": len(records),
         "n_pairs": len(pair_groups),
-        "spearman_rho": estimate,
-        "ci_low": low,
-        "ci_high": high,
-        "bootstrap_valid_replicates": valid,
+        "score_range": score_range,
+        "spearman_rho": spearman_estimate,
+        "spearman_ci_low": spearman_low,
+        "spearman_ci_high": spearman_high,
+        "spearman_bootstrap_valid_replicates": spearman_valid,
+        "mae": mae_estimate,
+        "mae_ci_low": mae_low,
+        "mae_ci_high": mae_high,
+        "mae_bootstrap_valid_replicates": mae_valid,
+        "normalized_mae": (
+            None if mae_estimate is None else mae_estimate / score_range
+        ),
+        "normalized_mae_ci_low": (
+            None if mae_low is None else mae_low / score_range
+        ),
+        "normalized_mae_ci_high": (
+            None if mae_high is None else mae_high / score_range
+        ),
     }
+
+
+def process_gate_bottleneck(
+    record: Mapping[str, Any], source: str, tolerance: float = 1e-12
+) -> str:
+    rewards = record[f"{source}_rewards"]
+    appraisal = float(rewards["appraisal_reward"])
+    transition = float(rewards["transition_reward"])
+    if abs(appraisal - transition) <= tolerance:
+        return "tie"
+    return "appraisal_reward" if appraisal < transition else "transition_reward"
+
+
+def process_gate_consistency_result(
+    pair_groups: Sequence[Sequence[Mapping[str, Any]]],
+    iterations: int,
+    confidence_level: float,
+    seed: int,
+) -> dict[str, Any]:
+    records = [record for group in pair_groups for record in group]
+
+    def agreement_stats(
+        groups: Sequence[Sequence[Mapping[str, Any]]],
+    ) -> dict[str, Any]:
+        flattened = [record for group in groups for record in group]
+        bottlenecks = [
+            (
+                process_gate_bottleneck(record, "judge"),
+                process_gate_bottleneck(record, "human"),
+            )
+            for record in flattened
+        ]
+        non_ties = [
+            item for item in bottlenecks if "tie" not in item
+        ]
+        absolute_errors = [
+            abs(record["judge_process_gate"] - record["human_process_gate"])
+            for record in flattened
+        ]
+        return {
+            "bottleneck_source_agreement_including_ties": (
+                statistics.mean(left == right for left, right in bottlenecks)
+                if bottlenecks
+                else None
+            ),
+            "bottleneck_source_agreement_excluding_ties": (
+                statistics.mean(left == right for left, right in non_ties)
+                if non_ties
+                else None
+            ),
+            "n_non_tie_candidates": len(non_ties),
+            "within_0_10_gate_error_rate": (
+                statistics.mean(error <= 0.10 for error in absolute_errors)
+                if absolute_errors
+                else None
+            ),
+        }
+
+    point = agreement_stats(pair_groups)
+    for offset, statistic_name in enumerate(
+        (
+            "bottleneck_source_agreement_including_ties",
+            "bottleneck_source_agreement_excluding_ties",
+            "within_0_10_gate_error_rate",
+        )
+    ):
+        low, high, valid = bootstrap_ci(
+            pair_groups,
+            lambda groups, field=statistic_name: agreement_stats(groups)[field],
+            iterations,
+            confidence_level,
+            seed + offset,
+        )
+        point[f"{statistic_name}_ci_low"] = low
+        point[f"{statistic_name}_ci_high"] = high
+        point[f"{statistic_name}_bootstrap_valid_replicates"] = valid
+    point.update(
+        {
+            "n_candidates": len(records),
+            "judge_bottleneck_counts": {
+                name: sum(
+                    process_gate_bottleneck(record, "judge") == name
+                    for record in records
+                )
+                for name in ("appraisal_reward", "transition_reward", "tie")
+            },
+            "human_bottleneck_counts": {
+                name: sum(
+                    process_gate_bottleneck(record, "human") == name
+                    for record in records
+                )
+                for name in ("appraisal_reward", "transition_reward", "tie")
+            },
+        }
+    )
+    return point
 
 
 def sign(value: float, tolerance: float = 1e-12) -> int:
@@ -300,6 +473,11 @@ def ranking_stats(
             human_caeu = statistics.mean(
                 caeu["human_rewards"][name] for name in PROCESS_REWARDS
             )
+        elif metric == "process_gate":
+            judge_base = base["judge_process_gate"]
+            judge_caeu = caeu["judge_process_gate"]
+            human_base = base["human_process_gate"]
+            human_caeu = caeu["human_process_gate"]
         else:
             judge_base = base["judge_rewards"][metric]
             judge_caeu = caeu["judge_rewards"][metric]
@@ -412,9 +590,32 @@ def main() -> int:
             human_rewards = {
                 name: float(human_row[name]) for name in PROCESS_REWARDS
             }
+            judge_process_gate = (
+                compute_process_gate(
+                    judge_rewards["appraisal_reward"],
+                    judge_rewards["transition_reward"],
+                    args.process_gate_mode,
+                )
+                if args.use_process_gate
+                else 1.0
+            )
+            human_process_gate = (
+                compute_process_gate(
+                    human_rewards["appraisal_reward"],
+                    human_rewards["transition_reward"],
+                    args.process_gate_mode,
+                )
+                if args.use_process_gate
+                else 1.0
+            )
             if not all(
                 math.isfinite(value)
-                for value in [*judge_rewards.values(), *human_rewards.values()]
+                for value in [
+                    *judge_rewards.values(),
+                    *human_rewards.values(),
+                    judge_process_gate,
+                    human_process_gate,
+                ]
             ):
                 raise ValueError("non-finite process reward")
             merged[candidate_id] = {
@@ -432,6 +633,8 @@ def main() -> int:
                 ),
                 "judge_rewards": judge_rewards,
                 "human_rewards": human_rewards,
+                "judge_process_gate": judge_process_gate,
+                "human_process_gate": human_process_gate,
             }
         except (KeyError, TypeError, ValueError) as exc:
             invalid_merged.append(
@@ -455,6 +658,7 @@ def main() -> int:
             args.bootstrap_iterations,
             args.confidence_level,
             metric_seed(args.seed, "item:" + item_name),
+            score_range=4.0,
         )
 
     criterion_correlations: dict[str, Any] = {}
@@ -474,6 +678,7 @@ def main() -> int:
             args.bootstrap_iterations,
             args.confidence_level,
             metric_seed(args.seed, "criterion:" + criterion),
+            score_range=4.0,
         )
 
     reward_correlations: dict[str, Any] = {}
@@ -485,7 +690,24 @@ def main() -> int:
             args.bootstrap_iterations,
             args.confidence_level,
             metric_seed(args.seed, "reward:" + reward_name),
+            score_range=1.0,
         )
+
+    process_gate_value_metrics = correlation_result(
+        pair_groups,
+        lambda record: record["judge_process_gate"],
+        lambda record: record["human_process_gate"],
+        args.bootstrap_iterations,
+        args.confidence_level,
+        metric_seed(args.seed, "process_gate:value"),
+        score_range=1.0,
+    )
+    process_gate_decision_metrics = process_gate_consistency_result(
+        pair_groups,
+        args.bootstrap_iterations,
+        args.confidence_level,
+        metric_seed(args.seed, "process_gate:decision"),
+    )
 
     identity = read_json(args.identity_key)
     if not isinstance(identity, dict) or not isinstance(identity.get("pairs"), list):
@@ -521,11 +743,15 @@ def main() -> int:
             args.confidence_level,
             metric_seed(args.seed, "ranking:" + metric),
         )
-        for metric in [*PROCESS_REWARDS, "process_reward_mean"]
+        for metric in [
+            *PROCESS_REWARDS,
+            "process_reward_mean",
+            "process_gate",
+        ]
     }
 
     summary = {
-        "schema_version": "judge-human-consistency-summary-v1",
+        "schema_version": "judge-human-consistency-summary-v2",
         "rubric_version": RUBRIC_VERSION,
         "appraisal_dimensions": dimensions,
         "bootstrap": {
@@ -534,6 +760,8 @@ def main() -> int:
             "resampling_unit": "CAREBench situation pair",
             "seed": args.seed,
         },
+        "process_gate_enabled": args.use_process_gate,
+        "process_gate_mode": args.process_gate_mode,
         "coverage": {
             "judge_result_row_count": len(judge_all),
             "judge_unique_success_count": len(judge_rows),
@@ -553,9 +781,19 @@ def main() -> int:
             "incomplete_base_caeu_pair_ids": incomplete_rank_pairs,
             "invalid_matched_rows": invalid_merged,
         },
-        "rubric_item_spearman": item_correlations,
-        "criterion_spearman": criterion_correlations,
-        "process_reward_spearman": reward_correlations,
+        "rubric_item_consistency": item_correlations,
+        "criterion_consistency": criterion_correlations,
+        "process_reward_consistency": reward_correlations,
+        "process_gate_consistency": {
+            "enabled": args.use_process_gate,
+            "mode": args.process_gate_mode,
+            "bottleneck_definition": (
+                "Lower of appraisal_reward and transition_reward; reported "
+                "as a diagnostic for all modes"
+            ),
+            "gate_value": process_gate_value_metrics,
+            "gate_decision": process_gate_decision_metrics,
+        },
         "base_vs_caeu_ranking_agreement": ranking_agreement,
     }
     write_json(summary_path, summary)
@@ -563,22 +801,65 @@ def main() -> int:
 
     table_rows: list[dict[str, Any]] = []
     for category, metrics in (
-        ("rubric_item_spearman", item_correlations),
-        ("criterion_spearman", criterion_correlations),
-        ("process_reward_spearman", reward_correlations),
+        ("rubric_item_consistency", item_correlations),
+        ("criterion_consistency", criterion_correlations),
+        ("process_reward_consistency", reward_correlations),
     ):
         for metric, result in metrics.items():
-            table_rows.append(
-                {
-                    "category": category,
-                    "metric": metric,
-                    "statistic": "spearman_rho",
-                    "n": result["n_candidates"],
-                    "estimate": result["spearman_rho"],
-                    "ci_low": result["ci_low"],
-                    "ci_high": result["ci_high"],
-                }
-            )
+            for statistic_name in ("spearman_rho", "mae"):
+                table_rows.append(
+                    {
+                        "category": category,
+                        "metric": metric,
+                        "statistic": statistic_name,
+                        "score_range": result["score_range"],
+                        "n": result["n_candidates"],
+                        "estimate": result[statistic_name],
+                        "ci_low": result[f"{statistic_name.split('_')[0]}_ci_low"],
+                        "ci_high": result[
+                            f"{statistic_name.split('_')[0]}_ci_high"
+                        ],
+                    }
+                )
+
+    for statistic_name in ("spearman_rho", "mae"):
+        prefix = statistic_name.split("_")[0]
+        table_rows.append(
+            {
+                "category": "process_gate_consistency",
+                "metric": "process_gate_value",
+                "statistic": statistic_name,
+                "score_range": 1.0,
+                "n": process_gate_value_metrics["n_candidates"],
+                "estimate": process_gate_value_metrics[statistic_name],
+                "ci_low": process_gate_value_metrics[f"{prefix}_ci_low"],
+                "ci_high": process_gate_value_metrics[f"{prefix}_ci_high"],
+            }
+        )
+    for statistic_name, count_field in (
+        ("bottleneck_source_agreement_including_ties", "n_candidates"),
+        (
+            "bottleneck_source_agreement_excluding_ties",
+            "n_non_tie_candidates",
+        ),
+        ("within_0_10_gate_error_rate", "n_candidates"),
+    ):
+        table_rows.append(
+            {
+                "category": "process_gate_consistency",
+                "metric": "process_gate_decision",
+                "statistic": statistic_name,
+                "score_range": 1.0,
+                "n": process_gate_decision_metrics[count_field],
+                "estimate": process_gate_decision_metrics[statistic_name],
+                "ci_low": process_gate_decision_metrics[
+                    f"{statistic_name}_ci_low"
+                ],
+                "ci_high": process_gate_decision_metrics[
+                    f"{statistic_name}_ci_high"
+                ],
+            }
+        )
     for metric, result in ranking_agreement.items():
         for statistic_name in (
             "agreement_including_ties",
@@ -589,6 +870,7 @@ def main() -> int:
                     "category": "base_vs_caeu_ranking_agreement",
                     "metric": metric,
                     "statistic": statistic_name,
+                    "score_range": 1.0,
                     "n": (
                         result["n_pairs"]
                         if statistic_name == "agreement_including_ties"
@@ -606,6 +888,7 @@ def main() -> int:
                 "category",
                 "metric",
                 "statistic",
+                "score_range",
                 "n",
                 "estimate",
                 "ci_low",
