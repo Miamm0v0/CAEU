@@ -45,13 +45,27 @@ class ConfigurableDataTests(unittest.TestCase):
         self.assertIn('"appraisals": {', prompt)
         self.assertIn('"dimension_specific_validity": {', prompt)
         self.assertIn('"score": 0', prompt)
-        self.assertIn('"rationale":', prompt)
+        self.assertNotIn('"rationale":', prompt)
         self.assertIn('"coherence": {', prompt)
         self.assertIn('"transition": {', prompt)
         self.assertNotIn("emotion_reference_alignment", prompt)
-        self.assertIn('"overall_feedback":', prompt)
+        self.assertNotIn('"overall_feedback":', prompt)
         self.assertNotIn('"norm_value_compatibility": {', prompt)
         self.assertIn("Never shorten a criterion to a bare number", prompt)
+
+        grounding_section = prompt.split(
+            "2. situation_grounding",
+            1,
+        )[1].split("3. experiencer_fidelity", 1)[0]
+        self.assertIn("situation\nalone", grounding_section)
+        self.assertIn(
+            "Do not use the human reference to raise or lower this criterion",
+            grounding_section,
+        )
+        self.assertNotIn(
+            "compatible with the human reference",
+            grounding_section,
+        )
 
         example = judge_output_example(CAREBENCH_DIMENSIONS)
         parsed = parse_judge_output(

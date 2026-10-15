@@ -17,6 +17,7 @@ from .parsing import (
     completion_text,
     parse_judge_output,
     parse_policy_output,
+    verify_evidence,
 )
 from .reward_components import (
     REWARD_COMPONENT_FIELDS,
@@ -32,6 +33,7 @@ from .spec import (
 
 
 GLM_DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
+GLM_DEFAULT_MODEL = "glm-5.3"
 DEFAULT_API_KEY_ENVS = {
     "openai": ("OPENAI_API_KEY",),
     "glm": ("ZAI_API_KEY", "ZHIPUAI_API_KEY"),
@@ -125,6 +127,14 @@ def effective_token_parameter(provider_name: str, requested: str) -> str:
     return requested
 
 
+def is_glm_53_model(provider_name: str, model: str) -> bool:
+    normalized = model.strip().lower()
+    return provider_name == "glm" and (
+        normalized == GLM_DEFAULT_MODEL
+        or normalized.startswith(f"{GLM_DEFAULT_MODEL}-")
+    )
+
+
 def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
     provider_name = str(
         getattr(args, "judge_provider", "openai")
@@ -176,6 +186,8 @@ def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
             resolved_key_env = ""
 
     model = args.judge_model.strip() or str(provider.get("model", "")).strip()
+    if not model and provider_name == "glm":
+        model = GLM_DEFAULT_MODEL
     base_url = (
         args.judge_base_url.strip()
         or str(provider.get("base_url", "")).strip()
@@ -196,6 +208,36 @@ def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
     token_parameter = effective_token_parameter(
         provider_name,
         requested_token_parameter,
+    )
+    requested_thinking = str(
+        getattr(args, "judge_thinking", "auto")
+    )
+    requested_reasoning_effort = str(
+        getattr(args, "judge_reasoning_effort", "auto")
+    )
+    glm_53 = is_glm_53_model(provider_name, model)
+    if glm_53 and requested_thinking == "disabled":
+        raise ValueError(
+            "GLM-5.3 requires --judge_thinking enabled; disabled is not "
+            "supported"
+        )
+    thinking = (
+        "enabled"
+        if glm_53 and requested_thinking == "auto"
+        else ("" if requested_thinking == "auto" else requested_thinking)
+    )
+    if requested_reasoning_effort != "auto" and not glm_53:
+        raise ValueError(
+            "--judge_reasoning_effort is supported only for GLM-5.3 models"
+        )
+    reasoning_effort = (
+        "max"
+        if glm_53 and requested_reasoning_effort == "auto"
+        else (
+            ""
+            if requested_reasoning_effort == "auto"
+            else requested_reasoning_effort
+        )
     )
 
     missing: list[str] = []
@@ -221,6 +263,10 @@ def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
         "response_format": response_format,
         "requested_token_parameter": requested_token_parameter,
         "token_parameter": token_parameter,
+        "requested_thinking": requested_thinking,
+        "thinking": thinking,
+        "requested_reasoning_effort": requested_reasoning_effort,
+        "reasoning_effort": reasoning_effort,
     }
 
 
@@ -228,6 +274,7 @@ def judge_response_format(
     mode: str,
     provider_name: str = "openai",
     appraisal_dimensions: list[str] | None = None,
+    rationale_mode: str = "none",
 ) -> dict[str, Any] | None:
     mode = effective_response_format(provider_name, mode)
     if mode == "text":
@@ -240,14 +287,17 @@ def judge_response_format(
             "json_schema": {
                 "name": "first_person_appraisal_chain_judgment",
                 "strict": True,
-                "schema": judge_output_schema(appraisal_dimensions),
+                "schema": judge_output_schema(
+                    appraisal_dimensions,
+                    rationale_mode,
+                ),
             },
         }
     raise ValueError(f"Unknown judge response format: {mode}")
 
 
 class APIJudge:
-    """API process Judge plus deterministic, component-wise GRPO rewards."""
+    """Evidence-aware Judge and raw-total GRPO reward normalization."""
 
     def __init__(
         self,
@@ -260,8 +310,10 @@ class APIJudge:
         self.settings = settings
         self.cache = cache
         self.appraisal_dimensions = list(args.appraisal_dimensions)
+        self.judge_rationale_mode = args.judge_rationale_mode
         self.judge_system_prompt = build_judge_system_prompt(
-            self.appraisal_dimensions
+            self.appraisal_dimensions,
+            self.judge_rationale_mode,
         )
         client_kwargs: dict[str, Any] = {
             "api_key": settings["api_key"],
@@ -292,13 +344,16 @@ class APIJudge:
     ) -> str:
         identity = {
             "rubric_version": RUBRIC_VERSION,
+            "judge_system_prompt": self.judge_system_prompt,
             "judge_provider": self.settings["provider"],
             "judge_model": self.settings["model"],
             "judge_base_url": self.settings["base_url"],
             "appraisal_dimensions": self.appraisal_dimensions,
             "response_format": self.settings["response_format"],
             "token_parameter": self.settings["token_parameter"],
-            "judge_thinking": getattr(self.args, "judge_thinking", "auto"),
+            "judge_thinking": self.settings["thinking"],
+            "judge_reasoning_effort": self.settings["reasoning_effort"],
+            "judge_rationale_mode": self.judge_rationale_mode,
             "situation": situation,
             "candidate": candidate,
             "reference": reference,
@@ -323,6 +378,7 @@ class APIJudge:
         )
         envelope = {
             "situation": situation,
+            "automatic_evidence_checks": verify_evidence(situation, candidate),
             "optional_human_appraisal_reference": (
                 appraisal_reference
                 if isinstance(appraisal_reference, dict)
@@ -355,6 +411,7 @@ class APIJudge:
             self.settings["response_format"],
             self.settings["provider"],
             self.appraisal_dimensions,
+            self.judge_rationale_mode,
         )
         candidate_digest = hashlib.sha256(
             json.dumps(
@@ -383,6 +440,10 @@ class APIJudge:
                 if (
                     self.settings["provider"] == "glm"
                     and self.args.judge_temperature == 0
+                    and not is_glm_53_model(
+                        self.settings["provider"],
+                        self.settings["model"],
+                    )
                 ):
                     # GLM exposes deterministic decoding as do_sample=false.
                     # The OpenAI transport forwards this provider extension.
@@ -391,15 +452,17 @@ class APIJudge:
                     request_kwargs["temperature"] = (
                         self.args.judge_temperature
                     )
-            judge_thinking = getattr(self.args, "judge_thinking", "auto")
-            if (
-                self.settings["provider"] == "glm"
-                and judge_thinking != "auto"
-            ):
+            judge_thinking = self.settings["thinking"]
+            if self.settings["provider"] == "glm" and judge_thinking:
                 # GLM's OpenAI-compatible API accepts this provider extension
                 # in the request body. Keeping it separate from
                 # --enable_thinking avoids changing policy generation.
                 glm_extra_body["thinking"] = {"type": judge_thinking}
+            reasoning_effort = self.settings["reasoning_effort"]
+            if reasoning_effort:
+                # extra_body keeps compatibility with OpenAI SDK versions
+                # that predate this GLM-5.3 request field.
+                glm_extra_body["reasoning_effort"] = reasoning_effort
             if glm_extra_body:
                 request_kwargs["extra_body"] = glm_extra_body
             if response_format is not None:
@@ -447,6 +510,7 @@ class APIJudge:
                 return parse_judge_output(
                     content,
                     self.appraisal_dimensions,
+                    self.judge_rationale_mode,
                 ), request_id
             except (TypeError, ValueError) as exc:
                 last_error = str(exc)
@@ -468,6 +532,7 @@ class APIJudge:
             if cached is not None:
                 cached = dict(cached)
                 cached["cache_hit"] = True
+                cached["sample_id"] = sample_id
                 return cached
         try:
             judgment, request_id = await self.request_judgment(
@@ -491,12 +556,18 @@ class APIJudge:
         scores = aggregate_judgment(
             judgment,
             self.appraisal_dimensions,
+            verify_evidence(situation, candidate),
         )
         result = {
             **scores,
             "judgment": judgment,
             "request_id": request_id,
             "cache_hit": False,
+            "sample_id": sample_id,
+            "situation": situation,
+            "candidate": candidate,
+            "reference": reference,
+            "evidence_diagnostics": verify_evidence(situation, candidate),
         }
         if self.cache is not None:
             self.cache.put(key, self.settings["model"], result)
@@ -513,6 +584,7 @@ class APIJudge:
             candidate = parse_policy_output(
                 completion_text(completion),
                 self.appraisal_dimensions,
+                require_evidence=True,
             )
         except (TypeError, ValueError) as exc:
             reward_components = invalid_reward_components(
@@ -618,6 +690,7 @@ class APIJudge:
         )
         optimization_weights = {
             "appraisal_reward": self.args.appraisal_reward_weight,
+            "grounding_reward": self.args.grounding_reward_weight,
             "coherence_reward": self.args.coherence_reward_weight,
             "transition_reward": self.args.transition_reward_weight,
             "outcome_reward": self.args.outcome_reward_weight,
@@ -626,24 +699,17 @@ class APIJudge:
             [item["reward_components"] for item in results],
             group_size=self.args.num_generations,
             optimization_weights=optimization_weights,
-            process_gates=[
-                (
-                    None
-                    if item["reward_components"] is None
-                    else (
-                        1.0
-                        if not item["valid"]
-                        else float(item["outcome_diagnostics"]["process_gate"])
-                    )
-                )
-                for item in results
-            ],
-            outcome_label_weight=self.args.outcome_label_weight,
-            outcome_intensity_weight=self.args.outcome_intensity_weight,
             epsilon=self.args.reward_normalization_epsilon,
         )
         for item, normalized in zip(results, normalized_rows):
             item["normalized_reward_components"] = normalized
+            item["reward_contributions"] = (
+                {
+                    field: weight * normalized[field]
+                    / sum(optimization_weights.values())
+                    for field, weight in optimization_weights.items()
+                } if normalized is not None else None
+            )
         self._log_results(
             results,
             training_signals,
@@ -661,6 +727,18 @@ class APIJudge:
     ) -> None:
         if log_extra is not None:
             extra_values = {
+                "reward_contributions": [
+                    json.dumps(item.get("reward_contributions"), separators=(",", ":"))
+                    for item in results
+                ],
+                "judge_grounding_dimension_scores": [
+                    json.dumps(item.get("grounding_dimension_scores", {}), separators=(",", ":"))
+                    for item in results
+                ],
+                "evidence_diagnostics": [
+                    json.dumps(item.get("evidence_diagnostics", {}), separators=(",", ":"))
+                    for item in results
+                ],
                 "reward_components": [
                     json.dumps(
                         item["reward_components"],
@@ -804,6 +882,8 @@ class APIJudge:
             "judge_raw_appraisal_emotion_linkage": judged_mean(
                 "raw_transition_reward"
             ),
+            "grounding_mean": judged_mean("grounding_mean"),
+            "grounding_tail": judged_mean("grounding_tail"),
             "process_gate": outcome_mean("process_gate"),
             "process_gate_enabled": outcome_mean("process_gate_enabled"),
             "positive_label_score": outcome_mean("positive_label_score"),
@@ -825,10 +905,17 @@ class APIJudge:
         available_signals = [
             float(value) for value in training_signals if value is not None
         ]
-        metrics["componentwise_training_signal_mean"] = (
+        metrics["total_normalized_training_signal_mean"] = (
             sum(available_signals) / len(available_signals)
             if available_signals
             else 0.0
+        )
+        raw_totals = [
+            item["normalized_reward_components"]["raw_total_reward"]
+            for item in results if item["normalized_reward_components"] is not None
+        ]
+        metrics["raw_total_reward"] = (
+            sum(raw_totals) / len(raw_totals) if raw_totals else 0.0
         )
         for name, value in metrics.items():
             log_metric(name, value)
@@ -857,5 +944,5 @@ class APIJudge:
                 log_metric,
             )
 
-        api_judge_reward.__name__ = "componentwise_group_normalized_reward"
+        api_judge_reward.__name__ = "raw_total_group_normalized_reward"
         return api_judge_reward

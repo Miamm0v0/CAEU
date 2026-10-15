@@ -34,6 +34,9 @@ from .spec import (
     RUBRIC_VERSION,
     TRANSITION_CRITERION,
     build_judge_system_prompt,
+    build_policy_system_prompt,
+    build_policy_user_prompt,
+    policy_output_example,
     judge_output_schema,
 )
 
@@ -70,6 +73,7 @@ def validate_training_arguments(args: argparse.Namespace) -> None:
         "judge_temperature",
         "invalid_component_reward",
         "appraisal_reward_weight",
+        "grounding_reward_weight",
         "coherence_reward_weight",
         "transition_reward_weight",
         "outcome_reward_weight",
@@ -91,8 +95,17 @@ def validate_training_arguments(args: argparse.Namespace) -> None:
             "--judge_thinking enabled/disabled is supported only with "
             "--judge_provider glm"
         )
+    if (
+        args.judge_provider != "glm"
+        and args.judge_reasoning_effort != "auto"
+    ):
+        raise ValueError(
+            "--judge_reasoning_effort is supported only with "
+            "--judge_provider glm"
+        )
     optimization_weights = [
         args.appraisal_reward_weight,
+        args.grounding_reward_weight,
         args.coherence_reward_weight,
         args.transition_reward_weight,
         args.outcome_reward_weight,
@@ -159,15 +172,16 @@ def write_rubric_artifact(
             "optimization_reward_components": OPTIMIZATION_REWARD_FIELDS,
             "optimization_weights": {
                 "appraisal_reward": args.appraisal_reward_weight,
+                "grounding_reward": args.grounding_reward_weight,
                 "coherence_reward": args.coherence_reward_weight,
                 "transition_reward": args.transition_reward_weight,
                 "outcome_reward": args.outcome_reward_weight,
             },
             "transition_reward": (
-                "min(appraisal_emotion_linkage, "
-                "mean_dimension_specific_validity, "
-                "mean_situation_grounding)"
+                "grounding_reward * evidence-validated judge.transition.score / 4"
             ),
+            "appraisal_reward": "mean of validity and experiencer fidelity across dimensions / 4",
+            "grounding_reward": "0.7 * grounding mean + 0.3 * mean of the lowest two dimension grounding scores; invalid quotes score zero",
             "gold_outcome_scores": {
                 "positive_label_score": "example-level set F1",
                 "negative_label_score": "example-level set F1",
@@ -179,18 +193,13 @@ def write_rubric_artifact(
             "process_gate": {
                 "enabled": args.use_process_gate,
                 "mode": args.process_gate_mode,
-                "inputs": ["appraisal_reward", "transition_reward"],
-                "outcome_reward": (
-                    "process_gate * weighted_mean(outcome_label_reward, "
-                    "outcome_intensity_reward)"
-                ),
+                "inputs": ["grounding_reward", "raw_transition_reward"],
+                "target": "transition_reward; gold outcome is not gated",
             },
             "normalization": (
-                "appraisal, coherence, transition, label outcome, and "
-                "intensity outcome are independently normalized within each "
-                "num_generations group; process_gate is then applied to the "
-                "normalized label/intensity outcome so normalization cannot "
-                "cancel the gate"
+                "combine raw optimization components by configured weights, "
+                "then standardize the total once within each num_generations "
+                "group; component diagnostics use the same total standard deviation"
             ),
             "format_hard_gate": {
                 "invalid_policy_output": (
@@ -211,9 +220,26 @@ def write_rubric_artifact(
             "requested": settings["requested_token_parameter"],
             "effective": settings["token_parameter"],
         },
-        "judge_thinking": args.judge_thinking,
-        "system_prompt": build_judge_system_prompt(selected_dimensions),
-        "output_schema": judge_output_schema(selected_dimensions),
+        "judge_thinking": {
+            "requested": settings["requested_thinking"],
+            "effective": settings["thinking"] or None,
+        },
+        "judge_reasoning_effort": {
+            "requested": settings["requested_reasoning_effort"],
+            "effective": settings["reasoning_effort"] or None,
+        },
+        "judge_rationale_mode": args.judge_rationale_mode,
+        "policy_output_example": policy_output_example(selected_dimensions, include_evidence=True),
+        "policy_system_prompt": build_policy_system_prompt(selected_dimensions, include_evidence=True),
+        "policy_user_prompt_template": build_policy_user_prompt("{situation}", selected_dimensions, include_evidence=True),
+        "system_prompt": build_judge_system_prompt(
+            selected_dimensions,
+            args.judge_rationale_mode,
+        ),
+        "output_schema": judge_output_schema(
+            selected_dimensions,
+            args.judge_rationale_mode,
+        ),
     }
     with (output_dir / "api_judge_rubric.json").open(
         "w",
@@ -256,9 +282,7 @@ def build_grpo_config(
         "top_p": args.top_p,
         "beta": args.beta,
         "loss_type": args.loss_type,
-        # The reward callable already normalizes every component separately by
-        # generation group. A second TRL normalization would destroy the
-        # requested component-wise weighting.
+        # The reward callable normalizes the raw weighted total once per group.
         "scale_rewards": "none",
         "mask_truncated_completions": True,
         "remove_unused_columns": False,
@@ -322,7 +346,14 @@ def save_manifest(
                 "requested": settings["requested_token_parameter"],
                 "effective": settings["token_parameter"],
             },
-            "thinking": args.judge_thinking,
+            "thinking": {
+                "requested": settings["requested_thinking"],
+                "effective": settings["thinking"] or None,
+            },
+            "reasoning_effort": {
+                "requested": settings["requested_reasoning_effort"],
+                "effective": settings["reasoning_effort"] or None,
+            },
             "reference_mode": args.judge_reference_mode,
             "cache_path": str(cache_path) if cache_path is not None else None,
             "failure_policy": args.judge_failure_policy,
@@ -337,6 +368,7 @@ def save_manifest(
             "optimization_components": OPTIMIZATION_REWARD_FIELDS,
             "optimization_weights": {
                 "appraisal_reward": args.appraisal_reward_weight,
+                "grounding_reward": args.grounding_reward_weight,
                 "coherence_reward": args.coherence_reward_weight,
                 "transition_reward": args.transition_reward_weight,
                 "outcome_reward": args.outcome_reward_weight,
@@ -349,6 +381,7 @@ def save_manifest(
                 "enabled": args.use_process_gate,
                 "mode": args.process_gate_mode,
                 "disabled_behavior": "gate=1.0",
+                "target": "transition_reward; gold outcome is independent",
             },
             "invalid_component_reward": args.invalid_component_reward,
             "format_hard_gate": {
@@ -358,28 +391,25 @@ def save_manifest(
                 ),
             },
             "transition_reward": (
-                "min(appraisal_emotion_linkage, "
-                "mean_dimension_specific_validity, "
-                "mean_situation_grounding)"
+                "grounding_reward * evidence-validated judge.transition.score / 4"
             ),
+            "appraisal_reward": "mean of validity and experiencer fidelity across dimensions / 4",
+            "grounding_reward": "0.7 * mean + 0.3 * mean of the lowest two dimension grounding scores; invalid quotes score zero",
             "outcome_reward": (
-                "process_gate(appraisal_reward, transition_reward) * "
                 "weighted_mean(gold_label_reward, gold_intensity_reward)"
             ),
             "normalization": {
                 "requested": args.scale_rewards,
-                "componentwise": (
-                    "group-normalize appraisal/coherence/transition and the "
-                    "two outcome subrewards, then apply process gate to the "
-                    "normalized outcome"
+                "total_reward": (
+                    "combine raw components, then normalize the weighted "
+                    "total once; component diagnostics share the total standard deviation"
                 ),
                 "epsilon": args.reward_normalization_epsilon,
                 "trl_scale_rewards": "none",
             },
             "scalar_training_signal": (
-                "weighted mean of separately group-normalized appraisal, "
-                "coherence, transition, and gated outcome components; it is "
-                "an internal optimizer input, not a persisted total_reward"
+                "group-normalized raw weighted total; raw_total_reward and "
+                "per-component reward_contributions are logged for auditing"
             ),
             "judge_failure_handling": (
                 "return None in skip mode; raise in error mode"

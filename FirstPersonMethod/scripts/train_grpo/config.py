@@ -76,7 +76,21 @@ def build_parser() -> argparse.ArgumentParser:
             "OpenAI-compatible endpoint and GLM-compatible request fields"
         ),
     )
-    judge.add_argument("--judge_model", type=str, default="")
+    judge.add_argument(
+        "--judge_model",
+        type=str,
+        default="",
+        help="Judge model ID; GLM defaults to glm-5.3 when omitted",
+    )
+    judge.add_argument(
+        "--judge_rationale_mode",
+        choices=["required", "none"],
+        default="none",
+        help=(
+            "none requests score-only judgments; required also requests "
+            "criterion rationales and overall feedback"
+        ),
+    )
     judge.add_argument(
         "--judge_config",
         type=str,
@@ -137,9 +151,18 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["auto", "enabled", "disabled"],
         default="auto",
         help=(
-            "GLM Judge thinking mode. auto omits the provider-specific field; "
-            "enabled/disabled sends thinking.type to the GLM API. This is "
-            "independent of the policy model's --enable_thinking option"
+            "GLM Judge thinking mode. For GLM-5.3, auto resolves to enabled "
+            "and disabled is rejected. This is independent of the policy "
+            "model's --enable_thinking option"
+        ),
+    )
+    judge.add_argument(
+        "--judge_reasoning_effort",
+        choices=["auto", "low", "high", "max"],
+        default="auto",
+        help=(
+            "GLM-5.3 reasoning effort. auto resolves to the provider default "
+            "max for GLM-5.3"
         ),
     )
     judge.add_argument("--judge_timeout_seconds", type=float, default=180.0)
@@ -177,33 +200,33 @@ def build_parser() -> argparse.ArgumentParser:
             "fails the strict format hard gate; the API Judge is not called"
         ),
     )
-    reward.add_argument("--appraisal_reward_weight", type=float, default=0.7)
-    reward.add_argument("--coherence_reward_weight", type=float, default=0.1)
+    reward.add_argument("--appraisal_reward_weight", type=float, default=0.25)
+    reward.add_argument("--grounding_reward_weight", type=float, default=0.20)
+    reward.add_argument("--coherence_reward_weight", type=float, default=0.05)
     reward.add_argument("--transition_reward_weight", type=float, default=0.1)
-    reward.add_argument("--outcome_reward_weight", type=float, default=0.1)
-    reward.add_argument("--outcome_label_weight", type=float, default=0.5)
-    reward.add_argument("--outcome_intensity_weight", type=float, default=0.5)
+    reward.add_argument("--outcome_reward_weight", type=float, default=0.40)
+    reward.add_argument("--outcome_label_weight", type=float, default=0.8)
+    reward.add_argument("--outcome_intensity_weight", type=float, default=0.2)
     process_gate = reward.add_mutually_exclusive_group()
     process_gate.add_argument(
         "--use_process_gate",
         dest="use_process_gate",
         action="store_true",
-        help="Enable process-gated outcome reward (default)",
+        help="Multiply raw linkage by evidence grounding (default); gold outcome is independent",
     )
     process_gate.add_argument(
         "--no_process_gate",
         dest="use_process_gate",
         action="store_false",
-        help="Disable the gate so outcome reward is not scaled by process quality",
+        help="Disable grounding multiplication of linkage; gold outcome stays independent",
     )
     parser.set_defaults(use_process_gate=True)
     reward.add_argument(
         "--process_gate_mode",
-        choices=["min", "product", "geometric_mean"],
-        default="min",
+        choices=["product"],
+        default="product",
         help=(
-            "Soft gate applied to gold outcome reward using appraisal and "
-            "transition quality"
+            "Grounding multiplied by raw linkage before total-reward normalization"
         ),
     )
     reward.add_argument(
@@ -237,10 +260,8 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["group"],
         default="group",
         help=(
-            "Process components and both outcome subrewards are normalized "
-            "independently within the num_generations group; the process gate "
-            "is applied afterward. TRL-level scaling is disabled to prevent a "
-            "second normalization"
+            "Combine raw rewards, then normalize the total once within each "
+            "num_generations group. TRL-level scaling is disabled."
         ),
     )
 

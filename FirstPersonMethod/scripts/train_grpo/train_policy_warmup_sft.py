@@ -29,6 +29,11 @@ QLoRA warm-up:
       --max_train_samples 100 --load_in_4bit --use_wandb \
       --output_dir FirstPersonMethod/output/policy_warmup_sft
 
+Generalization-oriented warm-up keeps the full output contract while reducing
+CAREBench-specific outcome pressure and arbitrary multi-label order bias:
+
+    --emotion_loss_weight 0.25 --emotion_label_order sample-shuffle
+
 The saved full model or PEFT adapter can be passed directly to GRPO through
 ``--model_name_or_path``; local adapters are detected automatically.
 """
@@ -36,7 +41,10 @@ The saved full model or PEFT adapter can be passed directly to GRPO through
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import random
+import re
 import sys
 from functools import partial
 from pathlib import Path
@@ -89,7 +97,6 @@ DEFAULT_MISSING_NORM_VALUE_TARGET = (
     "I do not have enough evidence from this event to identify a clear "
     "alignment or conflict with my norms or values."
 )
-
 
 def require_nonempty_text(value: Any, location: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -160,7 +167,25 @@ def require_bounded_int(
     return value
 
 
-def normalize_warmup_emotion(record: dict[str, Any]) -> dict[str, Any]:
+def _deterministically_shuffle_labels(
+    labels: list[str],
+    sample_id: str,
+    valence: str,
+    seed: int,
+) -> list[str]:
+    shuffled = list(labels)
+    digest = hashlib.sha256(
+        f"{seed}:{sample_id}:{valence}".encode("utf-8")
+    ).digest()
+    random.Random(int.from_bytes(digest[:8], "big")).shuffle(shuffled)
+    return shuffled
+
+
+def normalize_warmup_emotion(
+    record: dict[str, Any],
+    label_order: str = "canonical",
+    label_order_seed: int = 42,
+) -> dict[str, Any]:
     """Canonicalize labels by ontology, including misbucketed source labels."""
     sample_id = str(record.get("id", "<unknown>"))
     raw_emotion = record.get("emotion")
@@ -197,6 +222,30 @@ def normalize_warmup_emotion(record: dict[str, Any]) -> dict[str, Any]:
                     f"{raw_label!r}"
                 )
 
+    positive_labels = [
+        label for label in POSITIVE_LABELS if label in selected_positive
+    ]
+    negative_labels = [
+        label for label in NEGATIVE_LABELS if label in selected_negative
+    ]
+    if label_order == "sample-shuffle":
+        positive_labels = _deterministically_shuffle_labels(
+            positive_labels,
+            sample_id,
+            "positive",
+            label_order_seed,
+        )
+        negative_labels = _deterministically_shuffle_labels(
+            negative_labels,
+            sample_id,
+            "negative",
+            label_order_seed,
+        )
+    elif label_order != "canonical":
+        raise ValueError(
+            "emotion label_order must be 'canonical' or 'sample-shuffle'"
+        )
+
     emotion = {
         "positive_intensity": require_bounded_int(
             raw_emotion.get("positive_intensity"),
@@ -210,12 +259,8 @@ def normalize_warmup_emotion(record: dict[str, Any]) -> dict[str, Any]:
             6,
             f"{sample_id}: emotion.negative_intensity",
         ),
-        "positive_labels": [
-            label for label in POSITIVE_LABELS if label in selected_positive
-        ],
-        "negative_labels": [
-            label for label in NEGATIVE_LABELS if label in selected_negative
-        ],
+        "positive_labels": positive_labels,
+        "negative_labels": negative_labels,
     }
     if emotion["positive_intensity"] == 0 and emotion["positive_labels"]:
         raise ValueError(
@@ -233,6 +278,8 @@ def build_warmup_example(
     missing_norm_value_policy: str = "neutral",
     enable_thinking: bool = False,
     appraisal_dimensions: list[str] | str | None = None,
+    emotion_label_order: str = "canonical",
+    label_order_seed: int = 42,
 ) -> dict[str, Any]:
     selected_dimensions = resolve_appraisal_dimensions(
         appraisal_dimensions
@@ -254,7 +301,11 @@ def build_warmup_example(
             missing_norm_value_policy,
             selected_dimensions,
         ),
-        "emotion": normalize_warmup_emotion(record),
+        "emotion": normalize_warmup_emotion(
+            record,
+            label_order=emotion_label_order,
+            label_order_seed=label_order_seed,
+        ),
     }
     completion = json.dumps(target, ensure_ascii=False, indent=2)
     parse_policy_output(completion, selected_dimensions)
@@ -278,6 +329,229 @@ def build_warmup_example(
             "enable_thinking": enable_thinking,
         },
     }
+
+
+def _bounded_emotion_loss_weight(value: str) -> float:
+    try:
+        weight = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "emotion loss weight must be a number"
+        ) from exc
+    if not 0.0 < weight <= 1.0:
+        raise argparse.ArgumentTypeError(
+            "emotion loss weight must be in (0, 1]"
+        )
+    return weight
+
+
+def _find_last_subsequence_start(
+    token_ids: list[int],
+    pattern: list[int],
+) -> int | None:
+    if not pattern or len(pattern) > len(token_ids):
+        return None
+    last_start = None
+    limit = len(token_ids) - len(pattern) + 1
+    for start in range(limit):
+        if token_ids[start : start + len(pattern)] == pattern:
+            last_start = start
+    return last_start
+
+
+def _emotion_value_char_spans(serialized_emotion: str) -> list[tuple[int, int]]:
+    """Locate only scalar intensity values and strings inside label arrays."""
+    spans: list[tuple[int, int]] = []
+    for field in ("positive_intensity", "negative_intensity"):
+        match = re.search(
+            rf'"{re.escape(field)}"\s*:\s*(-?\d+)',
+            serialized_emotion,
+        )
+        if match is None:
+            raise RuntimeError(f"Serialized emotion is missing {field}")
+        spans.append(match.span(1))
+
+    for field in ("positive_labels", "negative_labels"):
+        array_match = re.search(
+            rf'"{re.escape(field)}"\s*:\s*\[(.*?)\]',
+            serialized_emotion,
+            flags=re.DOTALL,
+        )
+        if array_match is None:
+            raise RuntimeError(f"Serialized emotion is missing {field}")
+        array_start = array_match.start(1)
+        label_pattern = r'"([^"\\]*(?:\\.[^"\\]*)*)"'
+        for label_match in re.finditer(label_pattern, array_match.group(1)):
+            spans.append(
+                (
+                    array_start + label_match.start(1),
+                    array_start + label_match.end(1),
+                )
+            )
+    return sorted(spans)
+
+
+def _build_emotion_value_token_template(tokenizer, emotion: dict[str, Any]):
+    serialized = json.dumps(
+        {"emotion": emotion},
+        ensure_ascii=False,
+        indent=2,
+    )
+    char_spans = _emotion_value_char_spans(serialized)
+    try:
+        encoded = tokenizer(
+            serialized,
+            add_special_tokens=False,
+            return_offsets_mapping=True,
+        )
+        token_ids = list(encoded["input_ids"])
+        offsets = list(encoded["offset_mapping"])
+    except (KeyError, NotImplementedError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "--emotion_loss_weight below 1.0 requires a fast tokenizer with "
+            "offset mapping support"
+        ) from exc
+
+    weighted_positions = []
+    for token_index, (token_start, token_end) in enumerate(offsets):
+        if token_end <= token_start:
+            continue
+        if any(
+            token_end > value_start and token_start < value_end
+            for value_start, value_end in char_spans
+        ):
+            weighted_positions.append(token_index)
+    if len(weighted_positions) < 2:
+        raise RuntimeError(
+            "Could not map both emotion intensity values to tokenizer tokens"
+        )
+    return token_ids, weighted_positions
+
+
+def _align_emotion_value_positions(
+    row_token_ids: list[int],
+    template_token_ids: list[int],
+    template_value_positions: list[int],
+) -> list[int] | None:
+    """Align the largest template suffix that retains every target value."""
+    first_value_position = min(template_value_positions)
+    for trim in range(first_value_position + 1):
+        pattern = template_token_ids[trim:]
+        row_start = _find_last_subsequence_start(row_token_ids, pattern)
+        if row_start is None:
+            continue
+        return [
+            row_start + template_position - trim
+            for template_position in template_value_positions
+        ]
+    return None
+
+
+def build_emotion_weighted_trainer_class(stack, tokenizer, args):
+    """Build a lazy TRL subclass so preview/tests need no ML dependencies."""
+    base_trainer = stack["SFTTrainer"]
+    torch = stack["torch"]
+    emotion_loss_weight = args.emotion_loss_weight
+    if emotion_loss_weight == 1.0:
+        return base_trainer
+
+    template_cache = {}
+
+    class EmotionWeightedSFTTrainer(base_trainer):
+        def compute_loss(
+            self,
+            model,
+            inputs,
+            return_outputs=False,
+            num_items_in_batch=None,
+        ):
+            labels = inputs.get("labels")
+            if labels is None:
+                raise RuntimeError(
+                    "Emotion-weighted SFT requires token labels from SFTTrainer"
+                )
+
+            model_inputs = {
+                key: value for key, value in inputs.items() if key != "labels"
+            }
+            outputs = model(**model_inputs)
+            logits = outputs.logits
+            token_weights = torch.ones_like(labels, dtype=logits.dtype)
+
+            for row_index, row in enumerate(labels.detach().cpu().tolist()):
+                supervised_ids = [token_id for token_id in row if token_id != -100]
+                if not supervised_ids:
+                    raise RuntimeError("SFT batch contains no supervised tokens")
+                decoded = tokenizer.decode(
+                    supervised_ids,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=False,
+                )
+                object_start = decoded.find("{")
+                object_end = decoded.rfind("}")
+                if object_start < 0 or object_end < object_start:
+                    raise RuntimeError(
+                        "Could not recover the supervised JSON completion. It may "
+                        "have been truncated by --max_length."
+                    )
+                try:
+                    target = json.loads(decoded[object_start : object_end + 1])
+                    emotion = target["emotion"]
+                except (json.JSONDecodeError, KeyError, TypeError) as exc:
+                    raise RuntimeError(
+                        "Could not parse emotion from the supervised completion. "
+                        "The sample may have been truncated by --max_length."
+                    ) from exc
+                serialized_emotion = json.dumps(
+                    emotion,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                template = template_cache.get(serialized_emotion)
+                if template is None:
+                    template = _build_emotion_value_token_template(
+                        tokenizer,
+                        emotion,
+                    )
+                    template_cache[serialized_emotion] = template
+                value_positions = _align_emotion_value_positions(
+                    row,
+                    template[0],
+                    template[1],
+                )
+                if value_positions is None:
+                    raise RuntimeError(
+                        "Could not align emotion target values with the supervised "
+                        "completion tokens. Check tokenizer offset behavior or "
+                        "increase --max_length if the completion was truncated."
+                    )
+                for token_position in value_positions:
+                    token_weights[row_index, token_position] = emotion_loss_weight
+
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            shift_weights = token_weights[..., 1:].contiguous()
+            per_token_loss = torch.nn.functional.cross_entropy(
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
+                ignore_index=-100,
+                reduction="none",
+            )
+            flat_weights = shift_weights.view(-1)
+            supervised_mask = shift_labels.view(-1).ne(-100)
+            effective_weights = flat_weights * supervised_mask.to(
+                flat_weights.dtype
+            )
+            denominator = effective_weights.sum()
+            if denominator.item() <= 0:
+                raise RuntimeError(
+                    "Emotion-weighted SFT produced zero effective loss weight"
+                )
+            loss = (per_token_loss * effective_weights).sum() / denominator
+            return (loss, outputs) if return_outputs else loss
+
+    EmotionWeightedSFTTrainer.__name__ = "EmotionWeightedSFTTrainer"
+    return EmotionWeightedSFTTrainer
 
 
 def build_warmup_parser() -> argparse.ArgumentParser:
@@ -321,16 +595,42 @@ def build_warmup_parser() -> argparse.ArgumentParser:
             "to match the default GRPO Policy configuration"
         ),
     )
+    parser.add_argument(
+        "--emotion_loss_weight",
+        type=_bounded_emotion_loss_weight,
+        default=1.0,
+        help=(
+            "Relative token-loss weight for emotion target values. 1.0 keeps "
+            "the legacy objective. Values below 1.0 apply only to the two "
+            "intensity values and label strings; JSON keys and structure retain "
+            "weight 1.0."
+        ),
+    )
+    parser.add_argument(
+        "--emotion_label_order",
+        choices=["canonical", "sample-shuffle"],
+        default="canonical",
+        help=(
+            "canonical keeps legacy ontology order; sample-shuffle uses a "
+            "deterministic per-sample order to avoid arbitrary first-label bias."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_warmup_parser().parse_args(argv)
+    if args.emotion_loss_weight != 1.0 and args.packing:
+        raise ValueError(
+            "--packing is not supported with --emotion_loss_weight below 1.0"
+        )
     builder = partial(
         build_warmup_example,
         missing_norm_value_policy=args.missing_norm_value_policy,
         enable_thinking=args.enable_thinking,
         appraisal_dimensions=args.appraisal_dimensions,
+        emotion_label_order=args.emotion_label_order,
+        label_order_seed=args.seed,
     )
     return run_sft(
         args,
@@ -346,6 +646,12 @@ def main(argv: list[str] | None = None) -> int:
             },
             "missing_norm_value_policy": args.missing_norm_value_policy,
             "enable_thinking": args.enable_thinking,
+            "emotion_loss_weight": args.emotion_loss_weight,
+            "emotion_loss_scope": (
+                "emotion target values only: intensity scalars and label strings"
+            ),
+            "emotion_label_order": args.emotion_label_order,
+            "emotion_label_order_seed": args.seed,
             "default_missing_norm_value_target": (
                 DEFAULT_MISSING_NORM_VALUE_TARGET
                 if args.missing_norm_value_policy == "neutral"
@@ -359,6 +665,7 @@ def main(argv: list[str] | None = None) -> int:
                 "strict_json": True,
             },
         },
+        trainer_class_factory=build_emotion_weighted_trainer_class,
     )
 
 

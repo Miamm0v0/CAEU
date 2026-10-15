@@ -583,6 +583,8 @@ def evaluate_automatic_metrics(
             for dimension in appraisal_dimensions:
                 gold_text = gold_reasoning.get(dimension)
                 prediction_text = prediction_reasoning.get(dimension)
+                if isinstance(prediction_text, dict):
+                    prediction_text = prediction_text.get("appraisal")
                 if (
                     isinstance(gold_text, str)
                     and gold_text.strip()
@@ -1337,6 +1339,7 @@ def aggregate_judge_results(
             field: reward_component_mean(results, field)
             for field in (
                 "appraisal_reward",
+                "grounding_reward",
                 "coherence_reward",
                 "transition_reward",
                 "outcome_label_reward",
@@ -1348,6 +1351,7 @@ def aggregate_judge_results(
             field: reward_component_mean(judged, field)
             for field in (
                 "appraisal_reward",
+                "grounding_reward",
                 "coherence_reward",
                 "transition_reward",
                 "outcome_label_reward",
@@ -1530,6 +1534,12 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
             "--enable_thinking"
         ),
     )
+    group.add_argument(
+        "--judge_reasoning_effort",
+        choices=["auto", "low", "high", "max"],
+        default="auto",
+        help="GLM-5.3 reasoning effort; auto resolves to max",
+    )
     group.add_argument("--judge_timeout_seconds", type=float, default=180.0)
     group.add_argument("--judge_max_retries", type=int, default=3)
     group.add_argument("--judge_parse_retries", type=int, default=1)
@@ -1543,8 +1553,8 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
     group.add_argument("--judge_cache_path", type=str, default="")
     group.add_argument("--no_judge_cache", action="store_true")
     group.add_argument("--invalid_component_reward", type=float, default=-1.0)
-    group.add_argument("--outcome_label_weight", type=float, default=0.5)
-    group.add_argument("--outcome_intensity_weight", type=float, default=0.5)
+    group.add_argument("--outcome_label_weight", type=float, default=0.8)
+    group.add_argument("--outcome_intensity_weight", type=float, default=0.2)
     process_gate = group.add_mutually_exclusive_group()
     process_gate.add_argument(
         "--use_process_gate",
@@ -1559,8 +1569,8 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(use_process_gate=True)
     group.add_argument(
         "--process_gate_mode",
-        choices=["min", "product", "geometric_mean"],
-        default="min",
+        choices=["product"],
+        default="product",
     )
 
 

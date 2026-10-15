@@ -147,13 +147,16 @@ def normalize_policy_record(
         "prompt": [
             {
                 "role": "system",
-                "content": build_policy_system_prompt(appraisal_dimensions),
+                "content": build_policy_system_prompt(
+                    appraisal_dimensions, include_evidence=True
+                ),
             },
             {
                 "role": "user",
                 "content": build_policy_user_prompt(
                     situation,
                     appraisal_dimensions,
+                    include_evidence=True,
                 ),
             },
         ],

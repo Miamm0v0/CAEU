@@ -10,7 +10,12 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from .api_judge import APIJudge, GLM_DEFAULT_BASE_URL, resolve_judge_settings
+from .api_judge import (
+    APIJudge,
+    GLM_DEFAULT_BASE_URL,
+    GLM_DEFAULT_MODEL,
+    resolve_judge_settings,
+)
 from .config import build_parser
 from .spec import (
     APPRAISAL_CRITERIA,
@@ -37,11 +42,14 @@ def gold_reference() -> str:
 
 def valid_judgment_json(
     appraisal_dimensions: list[str] | None = None,
+    rationale_mode: str = "none",
 ) -> str:
     selected = appraisal_dimensions or APPRAISAL_DIMENSIONS
 
     def score_item() -> dict[str, object]:
-        return {"score": 4, "rationale": "Supported."}
+        if rationale_mode == "required":
+            return {"score": 4, "rationale": "Supported."}
+        return {"score": 4}
 
     judgment = {
         "appraisals": {
@@ -53,8 +61,9 @@ def valid_judgment_json(
         },
         "coherence": score_item(),
         "transition": score_item(),
-        "overall_feedback": "The chain is valid.",
     }
+    if rationale_mode == "required":
+        judgment["overall_feedback"] = "The chain is valid."
     return json.dumps(judgment)
 
 
@@ -70,7 +79,8 @@ class FakeCompletions:
                 SimpleNamespace(
                     message=SimpleNamespace(
                         content=valid_judgment_json(
-                            self.owner.response_dimensions
+                            self.owner.response_dimensions,
+                            self.owner.response_rationale_mode,
                         ),
                         refusal=None,
                     )
@@ -82,6 +92,7 @@ class FakeCompletions:
 class FakeAsyncOpenAI:
     last_instance: "FakeAsyncOpenAI | None" = None
     response_dimensions: list[str] = list(APPRAISAL_DIMENSIONS)
+    response_rationale_mode: str = "none"
 
     def __init__(self, **kwargs: object) -> None:
         self.client_kwargs = kwargs
@@ -94,11 +105,15 @@ class JudgeProviderTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeAsyncOpenAI.last_instance = None
         FakeAsyncOpenAI.response_dimensions = list(APPRAISAL_DIMENSIONS)
+        FakeAsyncOpenAI.response_rationale_mode = "none"
+
+    def test_cli_defaults_to_v2_reference_and_score_only_judge(self) -> None:
+        defaults = build_parser().parse_args([])
+        self.assertEqual(defaults.judge_reference_mode, "available")
+        self.assertEqual(defaults.judge_rationale_mode, "none")
 
     def test_glm_defaults_and_request_fields(self) -> None:
-        args = build_parser().parse_args(
-            ["--judge_provider", "glm", "--judge_model", "glm-test"]
-        )
+        args = build_parser().parse_args(["--judge_provider", "glm"])
         with patch.dict(os.environ, {"ZAI_API_KEY": "test-key"}, clear=True):
             settings = resolve_judge_settings(args)
 
@@ -106,8 +121,11 @@ class JudgeProviderTests(unittest.TestCase):
         self.assertEqual(settings["provider_section"], "glm")
         self.assertEqual(settings["api_key_env"], "ZAI_API_KEY")
         self.assertEqual(settings["base_url"], GLM_DEFAULT_BASE_URL)
+        self.assertEqual(settings["model"], GLM_DEFAULT_MODEL)
         self.assertEqual(settings["response_format"], "json_object")
         self.assertEqual(settings["token_parameter"], "max_tokens")
+        self.assertEqual(settings["thinking"], "enabled")
+        self.assertEqual(settings["reasoning_effort"], "max")
 
         judge = APIJudge(args, settings, FakeAsyncOpenAI, cache=None)
         _, request_id = asyncio.run(
@@ -131,9 +149,12 @@ class JudgeProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             instance.request_kwargs["extra_body"],
-            {"do_sample": False},
+            {
+                "thinking": {"type": "enabled"},
+                "reasoning_effort": "max",
+            },
         )
-        self.assertNotIn("temperature", instance.request_kwargs)
+        self.assertEqual(instance.request_kwargs["temperature"], 0.0)
         self.assertEqual(request_id, "glm-request-id")
 
     def test_glm_normalizes_openai_only_options(self) -> None:

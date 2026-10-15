@@ -1,4 +1,4 @@
-"""Regression tests for configurable rubric parsing and gated reward."""
+"""Regression tests for configurable rubric parsing and reward aggregation."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ class ConfigurableRubricParsingTests(unittest.TestCase):
         self.assertEqual(parsed["coherence"]["score"], 4)
         self.assertEqual(parsed["transition"]["score"], 4)
 
-    def test_transition_is_gated_by_validity_and_grounding(self) -> None:
+    def test_transition_uses_linkage_only(self) -> None:
         judgment = judgment_with_scores(
             {
                 "dimension_specific_validity": 2,
@@ -86,11 +86,11 @@ class ConfigurableRubricParsingTests(unittest.TestCase):
             result["transition_gate_components"][
                 "effective_transition_reward"
             ],
-            0.25,
+            1.0,
         )
         self.assertAlmostEqual(result["appraisal_reward"], 7.0 / 12.0)
         self.assertAlmostEqual(result["coherence_reward"], 1.0)
-        self.assertAlmostEqual(result["transition_reward"], 0.25)
+        self.assertAlmostEqual(result["transition_reward"], 1.0)
 
     def test_old_chain_schema_is_rejected(self) -> None:
         judgment = judgment_with_scores(

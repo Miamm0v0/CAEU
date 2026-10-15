@@ -924,7 +924,13 @@ def _parse_target_modules(value):
     return modules
 
 
-def run_sft(args, method_name, example_builder, manifest_extra=None):
+def run_sft(
+    args,
+    method_name,
+    example_builder,
+    manifest_extra=None,
+    trainer_class_factory=None,
+):
     train_examples, eval_examples, preparation_stats = prepare_examples(
         args, example_builder
     )
@@ -1041,7 +1047,11 @@ def run_sft(args, method_name, example_builder, manifest_extra=None):
             bnb_4bit_use_double_quant=True,
         )
 
-    trainer = stack["SFTTrainer"](
+    trainer_class = stack["SFTTrainer"]
+    if trainer_class_factory is not None:
+        trainer_class = trainer_class_factory(stack, tokenizer, args)
+
+    trainer = trainer_class(
         model=args.model_name_or_path,
         args=training_config,
         train_dataset=train_dataset,

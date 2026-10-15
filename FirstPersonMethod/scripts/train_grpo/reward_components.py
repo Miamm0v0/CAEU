@@ -1,4 +1,4 @@
-"""Deterministic outcome rewards and component-wise GRPO normalization."""
+"""Evidence-grounded raw rewards and one normalization of the weighted total."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 
 REWARD_COMPONENT_FIELDS = (
     "appraisal_reward",
+    "grounding_reward",
     "coherence_reward",
     "transition_reward",
     "outcome_label_reward",
@@ -15,11 +16,10 @@ REWARD_COMPONENT_FIELDS = (
     "outcome_reward",
 )
 
-# Label/intensity rewards are retained as separately logged diagnostics. Their
-# process-gated combination is the outcome component used for optimization, so
-# adding the two diagnostics again would count the outcome twice.
+# Label/intensity scores are diagnostics; outcome already contains both.
 OPTIMIZATION_REWARD_FIELDS = (
     "appraisal_reward",
+    "grounding_reward",
     "coherence_reward",
     "transition_reward",
     "outcome_reward",
@@ -104,7 +104,7 @@ def build_reward_components(
     use_process_gate: bool,
     process_gate_mode: str,
 ) -> tuple[dict[str, float], dict[str, float]]:
-    """Build the six persisted components plus atomic outcome diagnostics."""
+    """Gate raw linkage by grounding, keeping gold outcome independent."""
     gold_emotion = reference.get("gold_emotion")
     if not isinstance(gold_emotion, dict):
         raise ValueError("internal reference is missing gold_emotion")
@@ -116,33 +116,30 @@ def build_reward_components(
     denominator = outcome_label_weight + outcome_intensity_weight
     if denominator <= 0:
         raise ValueError("Outcome label + intensity weights must be positive")
-    ungated_outcome_reward = (
+    outcome_reward = (
         outcome_label_weight * outcome["outcome_label_reward"]
         + outcome_intensity_weight * outcome["outcome_intensity_reward"]
     ) / denominator
-    process_gate = (
-        compute_process_gate(
-            float(process_scores["appraisal_reward"]),
-            float(process_scores["transition_reward"]),
-            process_gate_mode,
-        )
-        if use_process_gate
-        else 1.0
-    )
+    if process_gate_mode != "product":
+        raise ValueError("Evidence-grounded reward requires --process_gate_mode product")
+    process_gate = float(process_scores["grounding_reward"]) if use_process_gate else 1.0
     components = {
         "appraisal_reward": float(process_scores["appraisal_reward"]),
+        "grounding_reward": float(process_scores["grounding_reward"]),
         "coherence_reward": float(process_scores["coherence_reward"]),
-        "transition_reward": float(process_scores["transition_reward"]),
+        "transition_reward": float(process_gate * process_scores["transition_reward"]),
         "outcome_label_reward": outcome["outcome_label_reward"],
         "outcome_intensity_reward": outcome["outcome_intensity_reward"],
-        "outcome_reward": float(process_gate * ungated_outcome_reward),
+        "outcome_reward": float(outcome_reward),
     }
     diagnostics = {
         key: float(value) for key, value in outcome.items()
     }
     diagnostics.update(
         {
-            "ungated_outcome_reward": float(ungated_outcome_reward),
+            "ungated_outcome_reward": float(outcome_reward),
+            "raw_transition_reward": float(process_scores["raw_transition_reward"]),
+            "evidence_transition_reward": float(process_scores["transition_reward"]),
             "process_gate": float(process_gate),
             "process_gate_enabled": float(bool(use_process_gate)),
         }
@@ -158,20 +155,12 @@ def group_normalize_components(
     component_rows: Sequence[Mapping[str, float] | None],
     group_size: int,
     optimization_weights: Mapping[str, float],
-    process_gates: Sequence[float | None] | None = None,
-    outcome_label_weight: float = 0.5,
-    outcome_intensity_weight: float = 0.5,
     epsilon: float = 1.0e-4,
 ) -> tuple[list[dict[str, float] | None], list[float | None]]:
-    """Build component-wise normalized signals for each contiguous GRPO group.
+    """Standardize the raw weighted total once, excluding Judge failures.
 
-    Missing rows represent Judge/API failures and remain excluded. Sample
-    standard deviation matches the usual GRPO group-normalization convention.
-    Process rewards and both atomic outcome subrewards are standardized first;
-    the process gate is applied to normalized outcome afterward so its magnitude
-    cannot be canceled by standardization. The trainer receives the weighted
-    average of the four non-duplicative optimization components; no raw
-    ``total_reward`` is persisted.
+    Component diagnostics share the total's standard deviation. Their weighted
+    sum equals the normalized total, allowing exact contribution auditing.
     """
     if group_size <= 0:
         raise ValueError("group_size must be positive")
@@ -182,17 +171,6 @@ def group_normalize_components(
             f"reward batch size {len(component_rows)} is not divisible by "
             f"num_generations={group_size}"
         )
-    if process_gates is None:
-        process_gates = [
-            None if row is None else 1.0 for row in component_rows
-        ]
-    if len(process_gates) != len(component_rows):
-        raise ValueError("process_gates must align with component_rows")
-    outcome_weight_denominator = (
-        outcome_label_weight + outcome_intensity_weight
-    )
-    if outcome_weight_denominator <= 0:
-        raise ValueError("Outcome label + intensity weights must be positive")
     weight_denominator = sum(
         float(optimization_weights[field])
         for field in OPTIMIZATION_REWARD_FIELDS
@@ -203,59 +181,39 @@ def group_normalize_components(
     normalized_rows: list[dict[str, float] | None] = [
         None for _ in component_rows
     ]
+    training_signals: list[float | None] = [None for _ in component_rows]
     for group_start in range(0, len(component_rows), group_size):
         group_indices = range(group_start, group_start + group_size)
-        # The two atomic outcome components are normalized before gating. This
-        # ordering is essential: normalizing a pre-gated outcome would cancel a
-        # gate that is similar across all candidates in a group.
-        for field in REWARD_COMPONENT_FIELDS[:-1]:
-            available = [
-                (index, float(component_rows[index][field]))
-                for index in group_indices
-                if component_rows[index] is not None
-            ]
-            if not available:
-                continue
-            mean = sum(value for _, value in available) / len(available)
-            if len(available) <= 1:
-                standard_deviation = 0.0
-            else:
-                variance = sum(
-                    (value - mean) ** 2 for _, value in available
-                ) / (len(available) - 1)
-                standard_deviation = math.sqrt(variance)
-            for index, value in available:
-                if normalized_rows[index] is None:
-                    normalized_rows[index] = {}
-                normalized_rows[index][field] = (
-                    0.0
-                    if standard_deviation <= epsilon
-                    else (value - mean) / (standard_deviation + epsilon)
-                )
-
-    for index, normalized in enumerate(normalized_rows):
-        if normalized is None:
+        available = [index for index in group_indices if component_rows[index] is not None]
+        if not available:
             continue
-        gate = process_gates[index]
-        if gate is None:
-            raise ValueError("A scored reward row must have a process gate")
-        normalized_base_outcome = (
-            outcome_label_weight * normalized["outcome_label_reward"]
-            + outcome_intensity_weight
-            * normalized["outcome_intensity_reward"]
-        ) / outcome_weight_denominator
-        normalized["outcome_reward"] = float(
-            float(gate) * normalized_base_outcome
+        totals = {
+            index: sum(
+                float(optimization_weights[field]) * float(component_rows[index][field])
+                for field in OPTIMIZATION_REWARD_FIELDS
+            ) / weight_denominator
+            for index in available
+        }
+        mean = sum(totals.values()) / len(available)
+        variance = (
+            sum((value - mean) ** 2 for value in totals.values()) / (len(available) - 1)
+            if len(available) > 1 else 0.0
         )
-
-    training_signals: list[float | None] = []
-    for normalized in normalized_rows:
-        if normalized is None:
-            training_signals.append(None)
-            continue
-        signal = sum(
-            float(optimization_weights[field]) * normalized[field]
-            for field in OPTIMIZATION_REWARD_FIELDS
-        ) / weight_denominator
-        training_signals.append(float(signal))
+        standard_deviation = math.sqrt(variance)
+        component_means = {
+            field: sum(float(component_rows[index][field]) for index in available) / len(available)
+            for field in REWARD_COMPONENT_FIELDS
+        }
+        for index in available:
+            normalized = {
+                field: (float(component_rows[index][field]) - component_means[field])
+                / (standard_deviation + epsilon)
+                if standard_deviation > epsilon else 0.0
+                for field in REWARD_COMPONENT_FIELDS
+            }
+            signal = (totals[index] - mean) / (standard_deviation + epsilon) if standard_deviation > epsilon else 0.0
+            normalized["raw_total_reward"] = totals[index]
+            normalized["total_reward"] = signal
+            normalized_rows[index] = normalized
+            training_signals[index] = signal
     return normalized_rows, training_signals

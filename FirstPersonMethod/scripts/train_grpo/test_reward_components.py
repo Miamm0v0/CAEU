@@ -153,6 +153,8 @@ class RewardComponentTests(unittest.TestCase):
         )
         for row in normalized:
             assert row is not None
+        for row in normalized:
+            assert row is not None
             self.assertAlmostEqual(
                 row["outcome_reward"],
                 0.2 * row["outcome_label_reward"],

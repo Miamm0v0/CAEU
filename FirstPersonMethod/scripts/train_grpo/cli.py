@@ -17,6 +17,7 @@ def print_preview(
     summary: dict[str, Any],
     count: int,
     appraisal_dimensions: list[str],
+    judge_rationale_mode: str,
 ) -> None:
     print(
         "[preview] configurable-appraisal API-Judge GRPO data "
@@ -26,7 +27,7 @@ def print_preview(
     print("\n===== POLICY OUTPUT EXAMPLE =====")
     print(
         json.dumps(
-            policy_output_example(appraisal_dimensions),
+            policy_output_example(appraisal_dimensions, include_evidence=True),
             ensure_ascii=False,
             indent=2,
         )
@@ -34,7 +35,7 @@ def print_preview(
     print("\n===== JUDGE RUBRIC OUTPUT SCHEMA =====")
     print(
         json.dumps(
-            judge_output_schema(appraisal_dimensions),
+            judge_output_schema(appraisal_dimensions, judge_rationale_mode),
             ensure_ascii=False,
             indent=2,
         )
@@ -75,7 +76,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.print_output_schema:
         print(
             json.dumps(
-                policy_output_example(args.appraisal_dimensions),
+                policy_output_example(args.appraisal_dimensions, include_evidence=True),
                 ensure_ascii=False,
                 indent=2,
             )
@@ -84,7 +85,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.print_judge_schema:
         print(
             json.dumps(
-                judge_output_schema(args.appraisal_dimensions),
+                judge_output_schema(
+                    args.appraisal_dimensions,
+                    args.judge_rationale_mode,
+                ),
                 ensure_ascii=False,
                 indent=2,
             )
@@ -99,6 +103,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             summary,
             args.preview_samples,
             args.appraisal_dimensions,
+            args.judge_rationale_mode,
         )
         return 0
     run_training(args, train_examples, eval_examples, summary)

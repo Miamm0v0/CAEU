@@ -13,8 +13,11 @@ from .spec import (
 )
 from .train_policy_warmup_sft import (
     DEFAULT_MISSING_NORM_VALUE_TARGET,
+    _align_emotion_value_positions,
+    _emotion_value_char_spans,
     build_warmup_example,
     build_warmup_parser,
+    normalize_warmup_emotion,
     normalize_warmup_reasoning,
 )
 
@@ -127,6 +130,10 @@ class PolicyWarmupSFTTests(unittest.TestCase):
                 "--max_eval_samples",
                 "4",
                 "--enable_thinking",
+                "--emotion_loss_weight",
+                "0.25",
+                "--emotion_label_order",
+                "sample-shuffle",
                 "--appraisal_dimensions",
                 "control_coping_potential,relevance,epistemic",
             ]
@@ -134,6 +141,8 @@ class PolicyWarmupSFTTests(unittest.TestCase):
         self.assertEqual(args.max_train_samples, 16)
         self.assertEqual(args.max_eval_samples, 4)
         self.assertTrue(args.enable_thinking)
+        self.assertEqual(args.emotion_loss_weight, 0.25)
+        self.assertEqual(args.emotion_label_order, "sample-shuffle")
         self.assertEqual(args.eval_ratio, 0.0)
         self.assertEqual(
             args.appraisal_dimensions,
@@ -142,6 +151,61 @@ class PolicyWarmupSFTTests(unittest.TestCase):
                 "epistemic",
                 "control_coping_potential",
             ],
+        )
+
+    def test_sample_shuffled_label_order_is_deterministic(self) -> None:
+        record = sample_record()
+        record["emotion"]["positive_labels"] = [
+            "hopeful",
+            "grateful",
+            "glad",
+            "love",
+        ]
+        first = normalize_warmup_emotion(
+            record,
+            label_order="sample-shuffle",
+            label_order_seed=17,
+        )
+        second = normalize_warmup_emotion(
+            record,
+            label_order="sample-shuffle",
+            label_order_seed=17,
+        )
+        self.assertEqual(first["positive_labels"], second["positive_labels"])
+        self.assertEqual(
+            set(first["positive_labels"]),
+            {"hopeful", "grateful", "glad", "love"},
+        )
+
+    def test_emotion_value_spans_exclude_keys_and_json_structure(self) -> None:
+        serialized = json.dumps(
+            {
+                "emotion": {
+                    "positive_intensity": 3,
+                    "negative_intensity": 2,
+                    "positive_labels": ["grateful", "glad"],
+                    "negative_labels": ["worried"],
+                }
+            },
+            indent=2,
+        )
+        values = [serialized[start:end] for start, end in _emotion_value_char_spans(serialized)]
+        self.assertEqual(
+            values,
+            ["3", "2", "grateful", "glad", "worried"],
+        )
+        self.assertNotIn("positive_intensity", values)
+        self.assertNotIn("[", values)
+
+    def test_emotion_value_template_alignment_keeps_only_value_positions(self) -> None:
+        row = [-100, 90, 91, 1, 2, 3, 4, 5, 6]
+        self.assertEqual(
+            _align_emotion_value_positions(
+                row,
+                [80, 81, 1, 2, 3, 4, 5, 6],
+                [4, 6],
+            ),
+            [5, 7],
         )
 
 
