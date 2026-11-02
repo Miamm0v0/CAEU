@@ -82,7 +82,7 @@ def build_hidden_reference(
         "gold_emotion": normalize_emotion(record),
     }
     raw_reasoning = record.get("appraisal_reasoning")
-    if include_appraisal_reference and isinstance(raw_reasoning, dict):
+    if isinstance(raw_reasoning, dict):
         reasoning: dict[str, str] = {}
         for dimension in appraisal_dimensions:
             legacy_key = CAREBENCH_REASONING_KEYS.get(
@@ -96,7 +96,9 @@ def build_hidden_reference(
             if isinstance(value, str) and value.strip():
                 reasoning[dimension] = value.strip()
         if reasoning:
-            reference["legacy_human_appraisal_reasoning"] = reasoning
+            reference["metric_human_appraisal_reasoning"] = reasoning
+            if include_appraisal_reference:
+                reference["legacy_human_appraisal_reasoning"] = reasoning
     return reference
 
 
@@ -147,16 +149,13 @@ def normalize_policy_record(
         "prompt": [
             {
                 "role": "system",
-                "content": build_policy_system_prompt(
-                    appraisal_dimensions, include_evidence=True
-                ),
+                "content": build_policy_system_prompt(appraisal_dimensions),
             },
             {
                 "role": "user",
                 "content": build_policy_user_prompt(
                     situation,
                     appraisal_dimensions,
-                    include_evidence=True,
                 ),
             },
         ],

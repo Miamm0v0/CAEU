@@ -17,8 +17,8 @@ from .parsing import (
     completion_text,
     parse_judge_output,
     parse_policy_output,
-    verify_evidence,
 )
+from .lightweight_metrics import carebench_metric_summary
 from .reward_components import (
     REWARD_COMPONENT_FIELDS,
     build_reward_components,
@@ -34,8 +34,15 @@ from .spec import (
 
 GLM_DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
 GLM_DEFAULT_MODEL = "glm-5.3"
+YINLI_OPENAI_DEFAULT_BASE_URL = "https://vip.yinli.one/v1"
+OPENAI_COMPATIBLE_PROVIDERS = frozenset({"openai", "yinli-openai"})
+OPENAI_REASONING_EFFORTS = frozenset(
+    {"none", "minimal", "low", "medium", "high", "xhigh"}
+)
+GLM_REASONING_EFFORTS = frozenset({"low", "high", "max"})
 DEFAULT_API_KEY_ENVS = {
     "openai": ("OPENAI_API_KEY",),
+    "yinli-openai": ("YINLI_API_KEY", "OPENAI_API_KEY"),
     "glm": ("ZAI_API_KEY", "ZHIPUAI_API_KEY"),
 }
 
@@ -194,6 +201,8 @@ def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
     )
     if not base_url and provider_name == "glm":
         base_url = GLM_DEFAULT_BASE_URL
+    if not base_url and provider_name == "yinli-openai":
+        base_url = YINLI_OPENAI_DEFAULT_BASE_URL
 
     requested_response_format = str(
         getattr(args, "judge_response_format", "auto")
@@ -226,10 +235,24 @@ def resolve_judge_settings(args: argparse.Namespace) -> dict[str, str]:
         if glm_53 and requested_thinking == "auto"
         else ("" if requested_thinking == "auto" else requested_thinking)
     )
-    if requested_reasoning_effort != "auto" and not glm_53:
-        raise ValueError(
-            "--judge_reasoning_effort is supported only for GLM-5.3 models"
-        )
+    if requested_reasoning_effort != "auto":
+        if glm_53 and requested_reasoning_effort not in GLM_REASONING_EFFORTS:
+            raise ValueError(
+                "GLM-5.3 --judge_reasoning_effort must be low, high, or max"
+            )
+        if provider_name == "glm" and not glm_53:
+            raise ValueError(
+                "--judge_reasoning_effort is supported only for GLM-5.3 "
+                "models with --judge_provider glm"
+            )
+        if (
+            provider_name in OPENAI_COMPATIBLE_PROVIDERS
+            and requested_reasoning_effort not in OPENAI_REASONING_EFFORTS
+        ):
+            raise ValueError(
+                "OpenAI-compatible --judge_reasoning_effort must be none, "
+                "minimal, low, medium, high, or xhigh"
+            )
     reasoning_effort = (
         "max"
         if glm_53 and requested_reasoning_effort == "auto"
@@ -297,7 +320,7 @@ def judge_response_format(
 
 
 class APIJudge:
-    """Evidence-aware Judge and raw-total GRPO reward normalization."""
+    """Situation-grounded Judge and raw-total GRPO reward normalization."""
 
     def __init__(
         self,
@@ -378,7 +401,6 @@ class APIJudge:
         )
         envelope = {
             "situation": situation,
-            "automatic_evidence_checks": verify_evidence(situation, candidate),
             "optional_human_appraisal_reference": (
                 appraisal_reference
                 if isinstance(appraisal_reference, dict)
@@ -435,7 +457,7 @@ class APIJudge:
             request_kwargs[self.settings["token_parameter"]] = (
                 self.args.judge_max_tokens
             )
-            glm_extra_body: dict[str, Any] = {}
+            provider_extra_body: dict[str, Any] = {}
             if not self.args.judge_omit_temperature:
                 if (
                     self.settings["provider"] == "glm"
@@ -447,7 +469,7 @@ class APIJudge:
                 ):
                     # GLM exposes deterministic decoding as do_sample=false.
                     # The OpenAI transport forwards this provider extension.
-                    glm_extra_body["do_sample"] = False
+                    provider_extra_body["do_sample"] = False
                 else:
                     request_kwargs["temperature"] = (
                         self.args.judge_temperature
@@ -457,14 +479,14 @@ class APIJudge:
                 # GLM's OpenAI-compatible API accepts this provider extension
                 # in the request body. Keeping it separate from
                 # --enable_thinking avoids changing policy generation.
-                glm_extra_body["thinking"] = {"type": judge_thinking}
+                provider_extra_body["thinking"] = {"type": judge_thinking}
             reasoning_effort = self.settings["reasoning_effort"]
             if reasoning_effort:
                 # extra_body keeps compatibility with OpenAI SDK versions
-                # that predate this GLM-5.3 request field.
-                glm_extra_body["reasoning_effort"] = reasoning_effort
-            if glm_extra_body:
-                request_kwargs["extra_body"] = glm_extra_body
+                # that predate provider-specific reasoning effort fields.
+                provider_extra_body["reasoning_effort"] = reasoning_effort
+            if provider_extra_body:
+                request_kwargs["extra_body"] = provider_extra_body
             if response_format is not None:
                 request_kwargs["response_format"] = response_format
             async with self.request_semaphore():
@@ -556,7 +578,6 @@ class APIJudge:
         scores = aggregate_judgment(
             judgment,
             self.appraisal_dimensions,
-            verify_evidence(situation, candidate),
         )
         result = {
             **scores,
@@ -567,7 +588,6 @@ class APIJudge:
             "situation": situation,
             "candidate": candidate,
             "reference": reference,
-            "evidence_diagnostics": verify_evidence(situation, candidate),
         }
         if self.cache is not None:
             self.cache.put(key, self.settings["model"], result)
@@ -584,7 +604,6 @@ class APIJudge:
             candidate = parse_policy_output(
                 completion_text(completion),
                 self.appraisal_dimensions,
-                require_evidence=True,
             )
         except (TypeError, ValueError) as exc:
             reward_components = invalid_reward_components(
@@ -656,6 +675,8 @@ class APIJudge:
                 "skipped": True,
                 "error": str(exc)[:500],
                 "feedback": "",
+                "candidate": candidate,
+                "reference": reference,
             }
 
     async def score_batch(
@@ -733,10 +754,6 @@ class APIJudge:
                 ],
                 "judge_grounding_dimension_scores": [
                     json.dumps(item.get("grounding_dimension_scores", {}), separators=(",", ":"))
-                    for item in results
-                ],
-                "evidence_diagnostics": [
-                    json.dumps(item.get("evidence_diagnostics", {}), separators=(",", ":"))
                     for item in results
                 ],
                 "reward_components": [
@@ -888,6 +905,9 @@ class APIJudge:
             "process_gate_enabled": outcome_mean("process_gate_enabled"),
             "positive_label_score": outcome_mean("positive_label_score"),
             "negative_label_score": outcome_mean("negative_label_score"),
+            "joint_valenced_label_score": outcome_mean(
+                "joint_valenced_label_score"
+            ),
             "positive_intensity_score": outcome_mean(
                 "positive_intensity_score"
             ),
@@ -895,6 +915,7 @@ class APIJudge:
                 "negative_intensity_score"
             ),
         }
+        metrics.update(carebench_metric_summary(results))
         for field in REWARD_COMPONENT_FIELDS:
             metrics[field] = component_mean(field)
             metrics[f"normalized_{field}_mean"] = component_mean(

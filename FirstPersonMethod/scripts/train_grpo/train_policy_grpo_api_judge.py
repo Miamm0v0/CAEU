@@ -20,6 +20,13 @@ For a GLM Judge, set ``ZAI_API_KEY`` and select the provider::
 
     python FirstPersonMethod/scripts/train_grpo/train_policy_grpo_api_judge.py \
       --judge_provider glm --judge_model glm-4.5
+
+For an OpenAI-compatible model through vip.yinli.one, set
+``YINLI_API_KEY`` and select the proxy profile::
+
+    python FirstPersonMethod/scripts/train_grpo/train_policy_grpo_api_judge.py \
+      --judge_provider yinli-openai --judge_model gpt-6.1 \
+      --judge_omit_temperature --judge_reasoning_effort low
 """
 
 from __future__ import annotations

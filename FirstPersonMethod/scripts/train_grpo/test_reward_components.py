@@ -1,4 +1,4 @@
-"""Tests for deterministic outcome rewards and component-wise GRPO scaling."""
+"""Tests for deterministic outcome rewards and total-reward GRPO scaling."""
 
 from __future__ import annotations
 
@@ -34,25 +34,28 @@ class RewardComponentTests(unittest.TestCase):
         components, diagnostics = build_reward_components(
             {
                 "appraisal_reward": 0.8,
+                "grounding_reward": 0.25,
                 "coherence_reward": 0.75,
                 "transition_reward": 0.5,
+                "raw_transition_reward": 0.5,
             },
             candidate,
             reference,
             outcome_label_weight=0.5,
             outcome_intensity_weight=0.5,
             use_process_gate=True,
-            process_gate_mode="min",
+            process_gate_mode="product",
         )
 
         self.assertAlmostEqual(diagnostics["positive_label_score"], 0.5)
         self.assertAlmostEqual(diagnostics["negative_label_score"], 1.0)
         self.assertAlmostEqual(diagnostics["positive_intensity_score"], 2 / 3)
         self.assertAlmostEqual(diagnostics["negative_intensity_score"], 5 / 6)
-        self.assertAlmostEqual(components["outcome_label_reward"], 0.75)
+        self.assertAlmostEqual(components["outcome_label_reward"], 0.5)
         self.assertAlmostEqual(components["outcome_intensity_reward"], 0.75)
-        self.assertAlmostEqual(diagnostics["process_gate"], 0.5)
-        self.assertAlmostEqual(components["outcome_reward"], 0.375)
+        self.assertAlmostEqual(diagnostics["process_gate"], 0.25)
+        self.assertAlmostEqual(components["transition_reward"], 0.125)
+        self.assertAlmostEqual(components["outcome_reward"], 0.625)
         self.assertEqual(tuple(components), REWARD_COMPONENT_FIELDS)
         self.assertNotIn("total_reward", components)
 
@@ -69,15 +72,17 @@ class RewardComponentTests(unittest.TestCase):
         components, diagnostics = build_reward_components(
             {
                 "appraisal_reward": 0.2,
+                "grounding_reward": 0.1,
                 "coherence_reward": 0.5,
                 "transition_reward": 0.25,
+                "raw_transition_reward": 0.25,
             },
             candidate,
             reference,
             outcome_label_weight=0.5,
             outcome_intensity_weight=0.5,
             use_process_gate=False,
-            process_gate_mode="min",
+            process_gate_mode="product",
         )
         self.assertEqual(diagnostics["process_gate"], 1.0)
         self.assertEqual(diagnostics["process_gate_enabled"], 0.0)
@@ -101,6 +106,7 @@ class RewardComponentTests(unittest.TestCase):
             group_size=4,
             optimization_weights={
                 "appraisal_reward": 0.7,
+                "grounding_reward": 0.0,
                 "coherence_reward": 0.1,
                 "transition_reward": 0.1,
                 "outcome_reward": 0.1,
@@ -123,6 +129,7 @@ class RewardComponentTests(unittest.TestCase):
             group_size=4,
             optimization_weights={
                 "appraisal_reward": 0.7,
+                "grounding_reward": 0.0,
                 "coherence_reward": 0.1,
                 "transition_reward": 0.1,
                 "outcome_reward": 0.1,
@@ -132,7 +139,7 @@ class RewardComponentTests(unittest.TestCase):
         self.assertIsNone(signals[1])
         self.assertEqual(signals[0], 0.0)
 
-    def test_process_gate_is_applied_after_outcome_normalization(self) -> None:
+    def test_raw_weighted_total_is_normalized_once(self) -> None:
         rows = []
         for index in range(4):
             row = {field: 1.0 for field in REWARD_COMPONENT_FIELDS}
@@ -145,20 +152,26 @@ class RewardComponentTests(unittest.TestCase):
             group_size=4,
             optimization_weights={
                 "appraisal_reward": 0.7,
+                "grounding_reward": 0.0,
                 "coherence_reward": 0.1,
                 "transition_reward": 0.1,
                 "outcome_reward": 0.1,
             },
-            process_gates=[0.2] * 4,
         )
-        for row in normalized:
+        for row, signal in zip(normalized, _):
             assert row is not None
-        for row in normalized:
-            assert row is not None
-            self.assertAlmostEqual(
-                row["outcome_reward"],
-                0.2 * row["outcome_label_reward"],
+            assert signal is not None
+            weighted_components = (
+                0.7 * row["appraisal_reward"]
+                + 0.1 * row["coherence_reward"]
+                + 0.1 * row["transition_reward"]
+                + 0.1 * row["outcome_reward"]
             )
+            self.assertAlmostEqual(
+                weighted_components,
+                signal,
+            )
+            self.assertAlmostEqual(row["total_reward"], signal)
 
     def test_invalid_format_has_component_hard_gate(self) -> None:
         components = invalid_reward_components(-1.0)

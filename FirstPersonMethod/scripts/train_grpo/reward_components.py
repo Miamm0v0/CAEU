@@ -1,4 +1,4 @@
-"""Evidence-grounded raw rewards and one normalization of the weighted total."""
+"""Situation-grounded raw rewards and one normalization of the weighted total."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def score_gold_emotion(
     candidate_emotion: Mapping[str, Any],
     gold_emotion: Mapping[str, Any],
 ) -> dict[str, float]:
-    """Score the four requested outcome fields directly against gold."""
+    """Score valence-tagged labels and both intensities against gold."""
     positive_label_score = label_set_f1(
         candidate_emotion["positive_labels"],
         gold_emotion["positive_labels"],
@@ -55,6 +55,18 @@ def score_gold_emotion(
     negative_label_score = label_set_f1(
         candidate_emotion["negative_labels"],
         gold_emotion["negative_labels"],
+    )
+    predicted_valenced_labels = [
+        *(f"positive:{label}" for label in candidate_emotion["positive_labels"]),
+        *(f"negative:{label}" for label in candidate_emotion["negative_labels"]),
+    ]
+    gold_valenced_labels = [
+        *(f"positive:{label}" for label in gold_emotion["positive_labels"]),
+        *(f"negative:{label}" for label in gold_emotion["negative_labels"]),
+    ]
+    joint_label_score = label_set_f1(
+        predicted_valenced_labels,
+        gold_valenced_labels,
     )
     positive_intensity_score = intensity_similarity(
         candidate_emotion["positive_intensity"],
@@ -67,11 +79,10 @@ def score_gold_emotion(
     return {
         "positive_label_score": float(positive_label_score),
         "negative_label_score": float(negative_label_score),
+        "joint_valenced_label_score": float(joint_label_score),
         "positive_intensity_score": float(positive_intensity_score),
         "negative_intensity_score": float(negative_intensity_score),
-        "outcome_label_reward": float(
-            (positive_label_score + negative_label_score) / 2.0
-        ),
+        "outcome_label_reward": float(joint_label_score),
         "outcome_intensity_reward": float(
             (positive_intensity_score + negative_intensity_score) / 2.0
         ),
@@ -104,7 +115,7 @@ def build_reward_components(
     use_process_gate: bool,
     process_gate_mode: str,
 ) -> tuple[dict[str, float], dict[str, float]]:
-    """Gate raw linkage by grounding, keeping gold outcome independent."""
+    """Build raw linkage and gold-outcome rewards independently by default."""
     gold_emotion = reference.get("gold_emotion")
     if not isinstance(gold_emotion, dict):
         raise ValueError("internal reference is missing gold_emotion")
@@ -121,7 +132,7 @@ def build_reward_components(
         + outcome_intensity_weight * outcome["outcome_intensity_reward"]
     ) / denominator
     if process_gate_mode != "product":
-        raise ValueError("Evidence-grounded reward requires --process_gate_mode product")
+        raise ValueError("Optional grounding gate requires --process_gate_mode product")
     process_gate = float(process_scores["grounding_reward"]) if use_process_gate else 1.0
     components = {
         "appraisal_reward": float(process_scores["appraisal_reward"]),
@@ -139,7 +150,7 @@ def build_reward_components(
         {
             "ungated_outcome_reward": float(outcome_reward),
             "raw_transition_reward": float(process_scores["raw_transition_reward"]),
-            "evidence_transition_reward": float(process_scores["transition_reward"]),
+            "judge_transition_reward": float(process_scores["transition_reward"]),
             "process_gate": float(process_gate),
             "process_gate_enabled": float(bool(use_process_gate)),
         }

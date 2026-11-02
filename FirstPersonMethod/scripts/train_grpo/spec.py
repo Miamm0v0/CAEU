@@ -12,10 +12,8 @@ except (ImportError, ValueError):
 
 
 RUBRIC_VERSION = (
-    "first-person-configurable-appraisal-v14-nested-evidence-first-raw-total-reward"
+    "first-person-configurable-appraisal-v19-learnable-fidelity-joint-label"
 )
-APPRAISAL_INSUFFICIENT_VALUE = "insufficient_information"
-EVIDENCE_TOP_LEVEL_KEYS = {"emotion_evidence"}
 
 
 # ---------------------------------------------------------------------------
@@ -117,10 +115,10 @@ DIMENSION_VALIDITY_GUIDANCE = {
     "relevance": (
         "Judge whether the candidate expresses personal significance or "
         "non-salience in relation to the goals, needs, well-being, "
-        "relationships, identity, or concerns stated in the candidate. "
-        "Assess the conceptual relation, not whether those concerns are true "
-        "of the actual experiencer. Mere event retelling is not a relevance "
-        "appraisal."
+        "relationships, identity, or concerns. "
+        "Distinguish how much an event matters from whether it is "
+        "pleasant or unpleasant. Mere event retelling is not a "
+        "relevance appraisal."
     ),
     "epistemic": (
         "Judge whether the candidate expresses perceived clarity, certainty, "
@@ -129,14 +127,18 @@ DIMENSION_VALIDITY_GUIDANCE = {
         "stated interpretation, not the accuracy of its beliefs or predictions. "
         "Distinguish the uncertainty expressed by the candidate from the "
         "judge's uncertainty about the truth of its premises."
+        "Unresolved contradictory assessments of the same outcome "
+        "should reduce validity; major contradictions generally "
+        "warrant 2 or below. "
     ),
     "goal_congruence": (
-        "Judge whether the candidate relates a stated outcome to a stated "
-        "goal, need, wish, or preferred state as advancing, obstructing, or "
-        "leaving it unaffected. Assess this relation conditional on the "
-        "candidate's premises, not whether the outcome or goal is accurate. "
-        "General positive or negative wording without an interpretable "
-        "outcome-goal relation is not sufficient."
+        "Judge whether the candidate appraises an outcome as advancing, "
+        "obstructing, or leaving unaffected a goal, need, wish, or preferred "
+        "state. The outcome-goal relation may be explicit or clearly implied; "
+        "separately stating the goal is not required. "
+        "Assess this relation conditional on the candidate's premises. "
+        "Positive or negative wording without an interpretable "
+        "outcome-goal relation is not sufficient. Do not invent goals that are neither stated nor clearly implied."
     ),
     "agency_accountability": (
         "Judge whether the candidate expresses an attribution of causation, "
@@ -145,21 +147,30 @@ DIMENSION_VALIDITY_GUIDANCE = {
         "Assess the meaning of the attribution, not whether it is factually "
         "correct. Blame, intention, and unfairness are not required for a "
         "valid agency or responsibility appraisal."
+        "Distinguish causal responsibility from moral blame "
+        "and controllability. "
     ),
     "control_coping_potential": (
         "Judge whether the candidate expresses perceived capacity to influence "
-        "an event or to act, seek help, tolerate, adapt, withdraw, or otherwise "
-        "cope. Assess these constructs using the capacities stated in the "
-        "candidate, not the experiencer's actual abilities. Distinguish "
-        "control over an event from coping with its consequences."
+        "this event or its outcome, or to cope with its consequences. Assess these constructs using the capacities stated in the "
+        "candidate, not the experiencer's actual abilities."
+        "Distinguish control over the outcome from control over one's actions "
+        "and ability to cope with consequences. "
+        "Taking action, exerting effort, or achieving a desired "
+        "outcome does not by itself establish control over "
+        "that outcome. "
+        "Low outcome control does not imply low coping potential. "
+        "Do not require both control and coping to be discussed."
     ),
     "norm_value_compatibility": (
-        "Judge whether the candidate expresses compatibility, conflict, "
-        "uncertainty, or non-salience in relation to moral values, personal "
-        "standards, identity commitments, or social norms represented in the "
-        "candidate. Assess this conceptual relation, not whether those "
-        "standards or a violation actually exist. A dimension-specific "
-        "statement of uncertainty or non-salience can be valid."
+        "Judge whether the candidate expresses compatibility, "
+        "conflict, uncertainty, or non-salience regarding moral "
+        "values, personal standards, identity commitments, "
+        "or social norms. "
+        "Distinguish norm/value compatibility from mere "
+        "unpleasantness or goal obstruction. "
+        "A norm violation is not required; dimension-specific "
+        "uncertainty or non-salience can be valid."
     ),
 }
 
@@ -235,34 +246,22 @@ EXPECTED_EMOTION_KEYS = {
 
 def build_policy_system_prompt(
     dimensions: Sequence[str] | str | None = None,
-    *,
-    include_evidence: bool = False,
 ) -> str:
     selected = resolve_appraisal_dimensions(dimensions)
     names = ", ".join(selected)
-    prompt = (
+    return (
         "You model the first-person cognitive appraisal process that connects "
         "an event to emotion. Analyze the event using exactly the selected "
         f"appraisal dimensions ({names}) before predicting emotion. Every "
         "appraisal must be a concise natural-language first-person statement "
-        "grounded only in the event. When a selected dimension is not clearly "
-        "implicated, explicitly state that the event provides no clear basis "
-        "for that appraisal instead of inventing a reaction. Do not invent "
+        "grounded only in the event. When a selected dimension is uncertain "
+        "or not clearly implicated, express that uncertainty naturally in the "
+        "first person instead of inventing a reaction. Do not use a fixed "
+        "placeholder. Do not invent "
         "facts, goals, intentions, relationships, consequences, or value "
         "conflicts. Return exactly one valid JSON object without markdown or "
         "commentary."
     )
-    if include_evidence:
-        prompt += (
-            " For every dimension, first quote the supplied situation, then "
-            "infer its first-person appraisal from that evidence. Each "
-            "appraisal_reasoning dimension contains evidence first and "
-            "appraisal second in the same object. For unavailable evidence, use an "
-            "empty quote array and exactly insufficient_information as the "
-            "appraisal. Explain the evidence for each selected emotion and "
-            "its intensity without introducing new facts."
-        )
-    return prompt
 
 
 POLICY_SYSTEM_PROMPT = build_policy_system_prompt()
@@ -281,36 +280,13 @@ def appraisal_definition_lines(
 def build_policy_user_prompt(
     situation: str,
     dimensions: Sequence[str] | str | None = None,
-    *,
-    include_evidence: bool = False,
 ) -> str:
     selected = resolve_appraisal_dimensions(dimensions)
     output_structure = json.dumps(
-        policy_output_example(selected, include_evidence=include_evidence),
+        policy_output_example(selected),
         ensure_ascii=False,
         indent=2,
     )
-    evidence_instruction = ""
-    if include_evidence:
-        evidence_instruction = """
-Each dimension inside appraisal_reasoning is an object containing evidence
-first and appraisal second. Put one or two short, verbatim quotes from
-Situation in that dimension's evidence array. Then write one concise
-first-person inference in its appraisal explaining how those quotes support
-that specific claim. Do not create a separate appraisal_evidence object.
-Do not quote your generated appraisals as evidence. Do not infer prior
-expectations, private knowledge, intentions, blame, or coping abilities merely
-from positive or negative valence. If evidence is insufficient, use [] for
-evidence and exactly insufficient_information for appraisal in that same
-dimension object. Do not abstain when the
-situation clearly supports the appraisal.
-
-Before emotion, provide emotion_evidence: situation_quotes contains short
-verbatim situation quotes; appraisal_dimensions lists only supported
-dimensions actually used; inference briefly supports each selected label and
-both intensity levels. Do not use insufficient_information as a premise.
-Include all supported emotion labels, not only the easiest label to explain.
-"""
     return f"""Imagine that you are the person who wrote the event below. Infer
 your cognitive appraisals and how you felt immediately after the event.
 
@@ -321,10 +297,11 @@ Write one concise, natural-language first-person appraisal for each selected
 dimension:
 {appraisal_definition_lines(selected)}
 
-If a selected dimension is not clearly implicated by the event, state that
-there is no clear basis for that appraisal. Do not invent information in order
-to fill a dimension.
-{evidence_instruction}
+If a selected dimension is uncertain or not clearly implicated by the event,
+express that uncertainty naturally in a concise first-person statement that
+still addresses the dimension, such as what you could not tell or were unsure
+about. Do not use a fixed placeholder, and do not invent information in order
+to make an appraisal more specific.
 
 Use the following CAREBench emotion format:
 - positive_intensity: integer from 0 to 6
@@ -347,26 +324,14 @@ Return exactly this structure and no other keys:
 
 def policy_output_example(
     dimensions: Sequence[str] | str | None = None,
-    *,
-    include_evidence: bool = False,
 ) -> dict[str, Any]:
     selected = resolve_appraisal_dimensions(dimensions)
-    result: dict[str, Any] = {}
-    result["appraisal_reasoning"] = {
-        dimension: {
-            "evidence": ["short exact situation quote; [] if unsupported"],
-            "appraisal": f"I infer my {dimension} appraisal from its cited evidence.",
+    result: dict[str, Any] = {
+        "appraisal_reasoning": {
+            dimension: f"I state my situation-grounded {dimension} appraisal."
+            for dimension in selected
         }
-        if include_evidence
-        else f"I state my situation-grounded {dimension} appraisal."
-        for dimension in selected
     }
-    if include_evidence:
-        result["emotion_evidence"] = {
-            "situation_quotes": ["short exact situation quote"],
-            "appraisal_dimensions": [selected[0]],
-            "inference": "Evidence-based explanation for selected labels and intensities.",
-        }
     result["emotion"] = {
         "positive_intensity": 0,
         "negative_intensity": 0,
@@ -408,56 +373,56 @@ def build_judge_system_prompt(
 
     # These safeguards supplement, rather than replace, the existing
     # dimension_validity_guidance_lines(selected) helper.
-    dimension_safeguards = {
-        "relevance": (
-            "Within the candidate's stated interpretation, distinguish "
-            "personal significance from positive or negative valence. "
-            "Relevance concerns how much something matters, not whether "
-            "it is pleasant."
-        ),
-        "epistemic": (
-            "Within the candidate's stated interpretation, distinguish "
-            "predictability, clarity, novelty, and uncertainty from negative "
-            "valence or lack of control. Do not verify whether the stated "
-            "expectations match the event."
-        ),
-        "goal_congruence": (
-            "Within the candidate's stated interpretation, distinguish an "
-            "outcome-goal relation from mere positive/negative emotion "
-            "labeling. Do not supply goals absent from the candidate."
-        ),
-        "agency_accountability": (
-            "Within the candidate's stated attributions, distinguish causal "
-            "responsibility from moral blame and controllability. Do not "
-            "verify who actually caused the event."
-        ),
-        "control_coping_potential": (
-            "Within the candidate's stated capacities, distinguish influencing "
-            "an event from adapting, responding, seeking help, or recovering "
-            "afterward. Low control need not imply low coping potential."
-        ),
-        "norm_value_compatibility": (
-            "Within the candidate's stated interpretation, distinguish "
-            "norm/value compatibility from mere unpleasantness or goal "
-            "obstruction. Do not require a norm violation; dimension-specific "
-            "uncertainty or non-salience can be meaningful."
-        ),
-    }
-    selected_safeguards = "\n".join(
-        f"- {dim}: {dimension_safeguards[dim]}"
-        for dim in selected
-    )
+    # dimension_safeguards = {
+    #     "relevance": (
+    #         "Within the candidate's stated interpretation, distinguish "
+    #         "personal significance from positive or negative valence. "
+    #         "Relevance concerns how much something matters, not whether "
+    #         "it is pleasant."
+    #     ),
+    #     "epistemic": (
+    #         "Within the candidate's stated interpretation, distinguish "
+    #         "predictability, clarity, novelty, and uncertainty from negative "
+    #         "valence or lack of control. Do not verify whether the stated "
+    #         "expectations match the event."
+    #     ),
+    #     "goal_congruence": (
+    #         "Within the candidate's stated interpretation, distinguish an "
+    #         "outcome-goal relation from mere positive/negative emotion "
+    #         "labeling. Do not invent goals that are neither stated nor clearly implied by the candidate."
+    #     ),
+    #     "agency_accountability": (
+    #         "Within the candidate's stated attributions, distinguish causal "
+    #         "responsibility from moral blame and controllability. Do not "
+    #         "verify who actually caused the event."
+    #     ),
+    #     "control_coping_potential": (
+    #         "Within the candidate's stated capacities, distinguish influencing "
+    #         "an event from adapting, responding, seeking help, or recovering "
+    #         "afterward. Low control need not imply low coping potential."
+    #     ),
+    #     "norm_value_compatibility": (
+    #         "Within the candidate's stated interpretation, distinguish "
+    #         "norm/value compatibility from mere unpleasantness or goal "
+    #         "obstruction. Do not require a norm violation; dimension-specific "
+    #         "uncertainty or non-salience can be meaningful."
+    #     ),
+    # }
+    # selected_safeguards = "\n".join(
+    #     f"- {dim}: {dimension_safeguards[dim]}"
+    #     for dim in selected
+    # )
 
-    norm_value_note = ""
-    if "norm_value_compatibility" in selected:
-        norm_value_note = """
-Special handling for norm_value_compatibility:
-The human reference may contain no direct Norm/Value annotation. Under
-experiencer_fidelity, missing reference coverage must not reduce the score.
-Under situation_grounding, do not infer a specific moral or social norm
-violation merely because the reference is silent. A careful statement that
-no specific value or norm conflict can be inferred may be well grounded.
-"""
+#     norm_value_note = ""
+#     if "norm_value_compatibility" in selected:
+#         norm_value_note = """
+# Special handling for norm_value_compatibility:
+# The human reference may contain no direct Norm/Value annotation. Under
+# experiencer_fidelity, missing reference coverage must not reduce the score.
+# Under situation_grounding, do not infer a specific moral or social norm
+# violation merely because the reference is silent. A careful statement that
+# no specific value or norm conflict can be inferred may be well grounded.
+# """
 
     coherence_target = (
         "whether the selected appraisal statements are mutually compatible "
@@ -474,8 +439,7 @@ no specific value or norm conflict can be inferred may be well grounded.
 - Every appraisal, coherence, and transition criterion MUST be an object
   containing exactly "score" and "rationale". Never shorten to a bare value."""
     else:
-        output_instructions = """- Replace every score placeholder with an independently assigned integer
-  from 0 to 4.
+        output_instructions = """- Replace every score placeholder with an independently assigned integer from 0 to 4.
 - Every appraisal, coherence, and transition criterion MUST be an object
   containing exactly "score". Never shorten to a bare value.
 - Do not include rationales, explanations, comments, or overall_feedback."""
@@ -488,124 +452,108 @@ The configured appraisal dimensions are exactly: {selected_names}.
 Assess the candidate's appraisal statements and predicted emotion labels and
 intensities using the FIVE distinct criteria specified below.
 
-EVIDENCE BOUNDARIES (MANDATORY):
-- dimension_specific_validity: appraisal_reasoning.<dimension>.appraisal +
-  appraisal theory ONLY.
-  Do NOT use the situation, human reference, or predicted emotion to score it.
-- situation_grounding: each dimension's evidence and appraisal fields +
-  original situation ONLY. Evaluate each dimension's evidence-to-inference
-  support, not merely whether it contains a quote.
-  Do NOT use the human reference or predicted emotion to score it.
-- experiencer_fidelity: candidate appraisal + situation + any available human
-  reference. Use the reference only within the limits defined below.
-- cross_dimension_coherence: candidate appraisal statements ONLY.
-  Do NOT use the situation, human reference, or predicted emotion.
-- appraisal_emotion_linkage (transition): candidate appraisal statements,
-  emotion_evidence, predicted emotion labels/intensities, and appraisal theory.
-  Check emotion_evidence against the supplied situation and supported
-  appraisal dimensions; a purported quote is not an extra reported fact.
-  Do NOT use the human reference or gold emotion to supply omitted premises.
 
-Do not leak information from one criterion into another. Judge every criterion
-independently on a 0-to-4 integer scale. The same candidate may legitimately
-receive high validity/coherence/linkage and low grounding, or vice versa.
-Do not lower multiple criteria automatically for the same flaw; score a flaw
-under each criterion only when it independently violates that criterion.
+CRITERION BOUNDARIES (MANDATORY):
 
-REFERENCE HANDLING (for experiencer_fidelity ONLY):
-The human appraisal reference is a subjective, non-exhaustive report by the
-actual experiencer, NOT a list of additional observable situation facts.
-It may contain private history, goals, relationships, or beliefs that were
-revealed only during later questions and cannot be recovered from the given
-situation. Do NOT require the candidate to guess or reproduce such details.
-Do NOT give extra credit for guessing an unsupported detail even when it
-matches the reference. Do not penalize omission of a private detail merely
-because the reference includes it. Compare the interpretation of observable
-cues and the represented experiencer, not wording or completeness relative
-to the reference. A compatible, evidence-calibrated alternative can receive
-full credit. Penalize a substantive reference mismatch only when the supplied
-situation provides enough information to distinguish the interpretations.
-When reference coverage is absent, assess fidelity from the situation and
-the specified experiencer; do not invent a hidden reference or impose a
-lower score solely because no reference was supplied.
-{norm_value_note}
+- dimension_specific_validity:
+  Candidate appraisal for the dimension + appraisal theory ONLY.
 
-GENERAL SCALE:
-0 = missing, fundamentally wrong, or wholly unacceptable for this criterion
-1 = major errors that substantially undermine this criterion
-2 = partly successful, but materially incomplete or inconsistent
-3 = mostly successful, with only minor errors or omissions
-4 = fully successful for this criterion
+- situation_grounding:
+  Candidate appraisal for the dimension + original situation ONLY. 
+
+- experiencer_fidelity:
+  Candidate appraisal for the dimension + corresponding human reference ONLY.
+
+- cross_dimension_coherence:
+  Candidate appraisal statements across different dimensions ONLY.
+
+- appraisal_emotion_linkage (transition):
+  Candidate appraisal statements + predicted emotion labels/intensities
+  + appraisal theory ONLY.
+
+Judge each criterion independently. Do not transfer evidence or
+penalties between criteria. High fidelity with low grounding,
+or high validity with low grounding, is possible.
+
+
+
 
 For EACH of the {appraisal_count} selected dimensions, assign three scores:
 
 1. dimension_specific_validity
-Evaluate whether the statement performs the correct appraisal operation and
-uses the dimension coherently, given the premises stated in the candidate.
-Do not assess whether those premises match the situation or reference here.
-An appraisal is an interpretation, not merely an event restatement or an
-emotion label. Dimension-specific uncertainty, neutrality, or non-salience
-can be valid; a generic disclaimer alone does not demonstrate the construct.
+Evaluate whether the candidate correctly expresses the specified
+appraisal construct, conditional on its own stated premises.
+Do not assess whether those premises match the situation here.
+Assess conceptual correctness, not completeness, elaboration, or coverage of every subconstruct within the dimension.
+An appraisal is an interpretation, not an event restatement or an emotion label. Dimension-specific uncertainty, neutrality, or non-salience can be valid when expressed as a natural first-person appraisal. It must still
+perform the dimension-specific operation; a disclaimer that does not address the dimension does not demonstrate the construct.
+A concise appraisal can receive full credit. Do not require elaboration, explicit theory terminology, or detailed reasoning.
+A statement containing unresolved, mutually incompatible assessments of the same outcome cannot receive full credit.
 
 Scoring anchors:
 - 0: missing, unintelligible, or addresses an entirely different construct.
 - 1: substantially confuses the dimension with another construct.
 - 2: partly captures the dimension, but remains vague or conceptually mixed.
-- 3: captures the correct operation with only minor imprecision.
-- 4: clearly and precisely performs the dimension-specific appraisal.
+- 3: captures the correct operation with minor imprecision.
+- 4: clearly and precisely performs the dimension-specific appraisal, even in a single concise sentence.
 
 Apply this guidance to the candidate's expressed constructs and premises only:
 {dimension_validity_guidance_lines(selected)}
 
-Dimension-specific safeguards:
-{selected_safeguards}
+
+
 
 2. situation_grounding
-Evaluate support and calibration against the situation alone. Distinguish
-explicit evidence, reasonable inference, unavailable information, and direct
-contradiction. Unmentioned information is not automatically false. Ordinary
-subjective interpretations can be reasonable inferences, but asserting a
-specific unreported relationship, history, intention, or consequence as an
-established fact requires evidence. Explicitly acknowledging unavailable
-information is preferable to manufacturing certainty. The reference cannot
-supply missing evidence for this criterion.
-For each dimension, check that appraisal_reasoning.<dimension>.evidence quotes
-the original situation and supports the inference in that same object's
-appraisal field. Evidence must precede appraisal in the requested policy output.
-A genuine but irrelevant quote does not support a specific expectation,
-belief, intention, responsibility, or coping claim. An empty evidence array
-with insufficient_information can earn full grounding credit only when the
-dimension really cannot be inferred from the situation. Do not reward blanket
-abstention when clear evidence is available. Automatic quote-check diagnostics
-are supplied separately; judge semantic support even when all quotes match.
+
+Evaluate whether the appraisal is unsupported by or contradicts the original situation.
+Use ONLY the situation and the candidate's appraisal, not the predicted emotion or human reference.
+
+Check all factual claims, including those embedded in subjective appraisals:
+- Unsupported: Factual details, personal experiences, actions, or
+  circumstances not stated or reasonably inferred from the situation.
+- Contradictory: Claims inconsistent with information explicitly
+  stated in the situation.
+
 
 Scoring anchors:
-- 0: directly contradicts central situation facts or depends almost entirely
-  on invented concrete content.
-- 1: major unsupported factual assertions materially change the appraisal.
-- 2: combines supported interpretation with material speculative assertions
-  presented as facts, or has only a weak connection to the situation.
-- 3: is substantially supported and appropriately calibrated, with a minor
-  evidential gap or imprecision.
-- 4: uses explicit cues or defensible inferences without material fabrication;
-  any uncertainty is appropriately acknowledged.
+0 = Central factual contradiction or entirely fabricated factual premises.
+1 = Major unsupported or contradictory factual claims.
+2 = Material or multiple unsupported factual claims.
+3 = Only minor unsupported factual details.
+4 = No unsupported or contradictory factual claims or premises.
+
+An unsupported concrete fact strictly prevents a score of 4.
+A subjective appraisal can receive a score of 4 without explicit factual support, as long as it introduces no unsupported factual claims or contradictions.
+A material unsupported premise generally warrants 2 or below.
+
+
 
 3. experiencer_fidelity
-Evaluate whether the candidate represents the specified experiencer's position
-rather than another agent's position or a generic observer's reaction. Use
-observable goals, knowledge, agency, responsibility, and coping circumstances.
-Apply the reference-handling rules above. First-person wording alone is not
-evidence of fidelity; exact reference wording is not required.
+
+Evaluate semantic agreement between the candidate's appraisal
+and the human reference for the same dimension.
+
+Assess whether the candidate faithfully represents this
+particular experiencer's subjective perspective, including
+appraisal direction, goals, beliefs, expectations,
+responsibility attribution, and perceived control.
+
+Distinguish the experiencer's perspective from those of
+other agents or a generic observer. First-person wording
+alone does not establish fidelity.
+
+Focus on substantive appraisal meaning, not identical
+wording or peripheral details. Do not evaluate situational
+grounding.
 
 Scoring anchors:
-- 0: adopts the wrong experiencer or clearly reverses that person's observable
-  position in the event.
-- 1: mainly substitutes another person's viewpoint or a generic stereotype.
-- 2: captures part of the experiencer's position but has a material, observable
-  mismatch or substantial loss of perspective.
-- 3: mostly represents this experiencer, with a minor omission or imprecision.
-- 4: faithfully represents this experiencer's observable position and a
-  compatible interpretation, without guessing private reference details.
+0 = Wrong experiencer or fundamentally contradicts the reference.
+1 = Major disagreement in appraisal meaning or perspective.
+2 = Partial agreement, with substantial differences.
+3 = Mostly faithful, with minor differences or omissions.
+4 = Faithfully matches the reference's substantive appraisal
+    and experiencer perspective.
+
 
 After the dimension scores, assign the two process scores independently:
 
@@ -624,24 +572,26 @@ Scoring anchors:
 2. appraisal_emotion_linkage (transition)
 Evaluate whether the candidate's stated appraisal pattern supports the
 predicted emotion labels and intensities under appraisal theory, conditional
-on those stated premises. This is not a second grounding or fidelity score.
-Use emotion_evidence to identify the candidate's claimed situation cues and
-appraisal premises. Check that its cited dimensions exist and are supported,
-and that its explanation supports each emitted label and the intensities.
-Do not award credit merely for providing an explanation. Do not reward
-omission of an otherwise supported label; gold label completeness is scored
-separately outside the Judge. An unavailable appraisal is not a premise.
-Do not use the situation or reference to add premises absent from the candidate,
-and do not compare the prediction with gold emotion.
+on those stated premises.
+Use only the candidate's stated appraisal dimensions as premises. Check whether
+they support each emitted label and both intensities. Apply these appraisal-theory relations explicitly:
+- relevance and salience govern whether substantial intensity is warranted;
+- goal congruence primarily supports emotional valence;
+- agency and accountability distinguish self-directed and other-directed emotion;
+- expectedness, certainty, and surprise constrain epistemic emotion;
+- control and coping potential distinguish threat, helplessness, challenge,
+  hope, and relief patterns;
+- norm and value compatibility support moral and self-evaluative emotion.
+These are theory-guided patterns, not deterministic one-to-one label rules.
+Use only dimensions actually expressed by the candidate. A dimension expressed
+as uncertain supplies only that uncertainty as a premise.
+Do not use the situation or reference to add premises absent from the candidate.
 Look for support for the particular emotion distinctions and their strength,
 not just matching positive/negative wording. A generic positive appraisal
 alone does not equally support every positive emotion; the same applies to
 negative emotions. Do not require a deterministic one-to-one mapping: multiple
 labels and mixed intensities can be supported by a compatible appraisal pattern.
-An omission of decisive appraisal information limits demonstrable linkage;
-do not silently supply that information from the situation or reference.
-This textual judgment does not establish whether the model causally used its
-appraisal prefix to generate emotion.
+
 
 Scoring anchors:
 - 0: the prediction is fundamentally incompatible with the stated appraisals,

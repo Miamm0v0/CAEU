@@ -69,11 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
     judge = parser.add_argument_group("API LLM Judge (OpenAI or GLM)")
     judge.add_argument(
         "--judge_provider",
-        choices=["openai", "glm"],
+        choices=["openai", "yinli-openai", "glm"],
         default="openai",
         help=(
-            "API protocol profile. glm uses the official BigModel "
-            "OpenAI-compatible endpoint and GLM-compatible request fields"
+            "API protocol profile. yinli-openai uses vip.yinli.one with "
+            "OpenAI-compatible request fields; glm uses the official "
+            "BigModel endpoint and GLM-compatible request fields"
         ),
     )
     judge.add_argument(
@@ -112,8 +113,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help=(
             "Environment variable containing the API key. Defaults to "
-            "OPENAI_API_KEY for OpenAI and ZAI_API_KEY (with legacy "
-            "ZHIPUAI_API_KEY fallback) for GLM"
+            "OPENAI_API_KEY for OpenAI, YINLI_API_KEY (with "
+            "OPENAI_API_KEY fallback) for yinli-openai, and ZAI_API_KEY "
+            "(with legacy ZHIPUAI_API_KEY fallback) for GLM"
         ),
     )
     judge.add_argument(
@@ -121,7 +123,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=str,
         default="",
         help=(
-            "API base URL. GLM defaults to "
+            "API base URL. yinli-openai defaults to "
+            "https://vip.yinli.one/v1; GLM defaults to "
             "https://open.bigmodel.cn/api/paas/v4/"
         ),
     )
@@ -158,11 +161,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     judge.add_argument(
         "--judge_reasoning_effort",
-        choices=["auto", "low", "high", "max"],
+        choices=[
+            "auto",
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ],
         default="auto",
         help=(
-            "GLM-5.3 reasoning effort. auto resolves to the provider default "
-            "max for GLM-5.3"
+            "Reasoning effort. OpenAI-compatible GPT models accept none, "
+            "minimal, low, medium, high, or xhigh when supported; GLM-5.3 "
+            "accepts low, high, or max. auto leaves OpenAI at the model "
+            "default and resolves to max for GLM-5.3"
         ),
     )
     judge.add_argument("--judge_timeout_seconds", type=float, default=180.0)
@@ -200,11 +214,19 @@ def build_parser() -> argparse.ArgumentParser:
             "fails the strict format hard gate; the API Judge is not called"
         ),
     )
-    reward.add_argument("--appraisal_reward_weight", type=float, default=0.25)
-    reward.add_argument("--grounding_reward_weight", type=float, default=0.20)
+    reward.add_argument("--appraisal_reward_weight", type=float, default=0.35)
+    reward.add_argument(
+        "--grounding_reward_weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Optional standalone grounding weight; default 0 because grounding "
+            "already gates appraisal quality dimension by dimension"
+        ),
+    )
     reward.add_argument("--coherence_reward_weight", type=float, default=0.05)
     reward.add_argument("--transition_reward_weight", type=float, default=0.1)
-    reward.add_argument("--outcome_reward_weight", type=float, default=0.40)
+    reward.add_argument("--outcome_reward_weight", type=float, default=0.50)
     reward.add_argument("--outcome_label_weight", type=float, default=0.8)
     reward.add_argument("--outcome_intensity_weight", type=float, default=0.2)
     process_gate = reward.add_mutually_exclusive_group()
@@ -212,15 +234,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--use_process_gate",
         dest="use_process_gate",
         action="store_true",
-        help="Multiply raw linkage by evidence grounding (default); gold outcome is independent",
+        help=(
+            "Optionally multiply raw linkage by aggregate situation grounding; "
+            "disabled by default"
+        ),
     )
     process_gate.add_argument(
         "--no_process_gate",
         dest="use_process_gate",
         action="store_false",
-        help="Disable grounding multiplication of linkage; gold outcome stays independent",
+        help="Use raw linkage as T; gold outcome stays independent (default)",
     )
-    parser.set_defaults(use_process_gate=True)
+    parser.set_defaults(use_process_gate=False)
     reward.add_argument(
         "--process_gate_mode",
         choices=["product"],

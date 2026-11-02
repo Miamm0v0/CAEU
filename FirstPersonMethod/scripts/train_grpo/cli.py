@@ -27,7 +27,7 @@ def print_preview(
     print("\n===== POLICY OUTPUT EXAMPLE =====")
     print(
         json.dumps(
-            policy_output_example(appraisal_dimensions, include_evidence=True),
+            policy_output_example(appraisal_dimensions),
             ensure_ascii=False,
             indent=2,
         )
@@ -76,7 +76,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.print_output_schema:
         print(
             json.dumps(
-                policy_output_example(args.appraisal_dimensions, include_evidence=True),
+                policy_output_example(args.appraisal_dimensions),
                 ensure_ascii=False,
                 indent=2,
             )

@@ -52,7 +52,10 @@ class ConfigurableRubricParsingTests(unittest.TestCase):
             coherence_score=4,
             transition_score=4,
         )
-        parsed = parse_judge_output(json.dumps(judgment))
+        parsed = parse_judge_output(
+            json.dumps(judgment),
+            rationale_mode="required",
+        )
         self.assertEqual(parsed["coherence"]["score"], 4)
         self.assertEqual(parsed["transition"]["score"], 4)
 
@@ -88,7 +91,7 @@ class ConfigurableRubricParsingTests(unittest.TestCase):
             ],
             1.0,
         )
-        self.assertAlmostEqual(result["appraisal_reward"], 7.0 / 12.0)
+        self.assertAlmostEqual(result["appraisal_reward"], 0.1875)
         self.assertAlmostEqual(result["coherence_reward"], 1.0)
         self.assertAlmostEqual(result["transition_reward"], 1.0)
 
@@ -128,6 +131,7 @@ class ConfigurableRubricParsingTests(unittest.TestCase):
         parsed_judgment = parse_judge_output(
             json.dumps(judgment),
             CAREBENCH_DIMENSIONS,
+            rationale_mode="required",
         )
         result = aggregate_judgment(
             parsed_judgment,

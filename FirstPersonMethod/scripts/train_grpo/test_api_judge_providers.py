@@ -14,6 +14,7 @@ from .api_judge import (
     APIJudge,
     GLM_DEFAULT_BASE_URL,
     GLM_DEFAULT_MODEL,
+    YINLI_OPENAI_DEFAULT_BASE_URL,
     resolve_judge_settings,
 )
 from .config import build_parser
@@ -271,6 +272,41 @@ class JudgeProviderTests(unittest.TestCase):
         )
         self.assertEqual(instance.request_kwargs["temperature"], 0.0)
         self.assertNotIn("extra_body", instance.request_kwargs)
+
+    def test_yinli_openai_reasoning_model_request(self) -> None:
+        args = build_parser().parse_args(
+            [
+                "--judge_provider",
+                "yinli-openai",
+                "--judge_model",
+                "gpt-6.1",
+                "--judge_reasoning_effort",
+                "low",
+                "--judge_omit_temperature",
+            ]
+        )
+        with patch.dict(os.environ, {"YINLI_API_KEY": "test-key"}, clear=True):
+            settings = resolve_judge_settings(args)
+
+        self.assertEqual(settings["base_url"], YINLI_OPENAI_DEFAULT_BASE_URL)
+        self.assertEqual(settings["api_key_env"], "YINLI_API_KEY")
+        self.assertEqual(settings["model"], "gpt-6.1")
+        self.assertEqual(settings["reasoning_effort"], "low")
+
+        judge = APIJudge(args, settings, FakeAsyncOpenAI, cache=None)
+        asyncio.run(judge.request_judgment("A situation.", {}, {}))
+        instance = FakeAsyncOpenAI.last_instance
+        self.assertIsNotNone(instance)
+        assert instance is not None
+        self.assertEqual(
+            instance.client_kwargs["base_url"],
+            YINLI_OPENAI_DEFAULT_BASE_URL,
+        )
+        self.assertEqual(
+            instance.request_kwargs["extra_body"],
+            {"reasoning_effort": "low"},
+        )
+        self.assertNotIn("temperature", instance.request_kwargs)
 
     def test_raw_judge_output_can_be_logged_for_diagnostics(self) -> None:
         args = build_parser().parse_args(

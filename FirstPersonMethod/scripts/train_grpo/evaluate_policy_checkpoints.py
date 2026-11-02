@@ -1504,10 +1504,15 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
     group.add_argument("--use_api_judge", action="store_true")
     group.add_argument(
         "--judge_provider",
-        choices=["openai", "glm"],
+        choices=["openai", "yinli-openai", "glm"],
         default="openai",
     )
     group.add_argument("--judge_model", type=str, default="")
+    group.add_argument(
+        "--judge_rationale_mode",
+        choices=["required", "none"],
+        default="none",
+    )
     group.add_argument("--judge_config", type=str, default="")
     group.add_argument("--judge_provider_section", type=str, default="")
     group.add_argument("--judge_api_key_env", type=str, default="")
@@ -1536,9 +1541,21 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
     )
     group.add_argument(
         "--judge_reasoning_effort",
-        choices=["auto", "low", "high", "max"],
+        choices=[
+            "auto",
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ],
         default="auto",
-        help="GLM-5.3 reasoning effort; auto resolves to max",
+        help=(
+            "OpenAI-compatible or GLM-5.3 reasoning effort; auto uses the "
+            "provider/model default"
+        ),
     )
     group.add_argument("--judge_timeout_seconds", type=float, default=180.0)
     group.add_argument("--judge_max_retries", type=int, default=3)
@@ -1566,7 +1583,7 @@ def add_judge_arguments(parser: argparse.ArgumentParser) -> None:
         dest="use_process_gate",
         action="store_false",
     )
-    parser.set_defaults(use_process_gate=True)
+    parser.set_defaults(use_process_gate=False)
     group.add_argument(
         "--process_gate_mode",
         choices=["product"],
@@ -1857,7 +1874,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"[result] checkpoint={spec.label} "
             f"format_valid_rate={coverage['format_valid_rate']:.4f} "
-            f"gated_outcome_reward={outcome_reward}",
+            f"outcome_reward={outcome_reward}",
             flush=True,
         )
 

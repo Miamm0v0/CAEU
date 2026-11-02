@@ -95,14 +95,6 @@ def validate_training_arguments(args: argparse.Namespace) -> None:
             "--judge_thinking enabled/disabled is supported only with "
             "--judge_provider glm"
         )
-    if (
-        args.judge_provider != "glm"
-        and args.judge_reasoning_effort != "auto"
-    ):
-        raise ValueError(
-            "--judge_reasoning_effort is supported only with "
-            "--judge_provider glm"
-        )
     optimization_weights = [
         args.appraisal_reward_weight,
         args.grounding_reward_weight,
@@ -168,6 +160,11 @@ def write_rubric_artifact(
         "transition_criterion": TRANSITION_CRITERION,
         "score_scale": {"minimum": 0, "maximum": 4},
         "aggregation": {
+            "formula": (
+                "0.35 * mean_d[grounding_d * mean(validity_d, fidelity_d)] "
+                "+ 0.05 * coherence + 0.10 * transition + "
+                "0.50 * (0.8 * label + 0.2 * intensity) at default weights"
+            ),
             "persisted_reward_components": REWARD_COMPONENT_FIELDS,
             "optimization_reward_components": OPTIMIZATION_REWARD_FIELDS,
             "optimization_weights": {
@@ -178,13 +175,19 @@ def write_rubric_artifact(
                 "outcome_reward": args.outcome_reward_weight,
             },
             "transition_reward": (
-                "grounding_reward * evidence-validated judge.transition.score / 4"
+                "judge.transition.score / 4 by default; optional grounding gate"
             ),
-            "appraisal_reward": "mean of validity and experiencer fidelity across dimensions / 4",
-            "grounding_reward": "0.7 * grounding mean + 0.3 * mean of the lowest two dimension grounding scores; invalid quotes score zero",
+            "appraisal_reward": (
+                "mean across dimensions of grounding * mean(dimension-specific "
+                "validity, experiencer fidelity)"
+            ),
+            "grounding_reward": "0.7 * grounding mean + 0.3 * mean of the lowest two dimension grounding scores",
             "gold_outcome_scores": {
-                "positive_label_score": "example-level set F1",
-                "negative_label_score": "example-level set F1",
+                "positive_label_score": "diagnostic example-level set F1",
+                "negative_label_score": "diagnostic example-level set F1",
+                "outcome_label_reward": (
+                    "example-level set F1 over the union of valence-tagged labels"
+                ),
                 "positive_intensity_score": "1 - abs(pred-gold)/6",
                 "negative_intensity_score": "1 - abs(pred-gold)/6",
                 "label_weight": args.outcome_label_weight,
@@ -194,7 +197,7 @@ def write_rubric_artifact(
                 "enabled": args.use_process_gate,
                 "mode": args.process_gate_mode,
                 "inputs": ["grounding_reward", "raw_transition_reward"],
-                "target": "transition_reward; gold outcome is not gated",
+                "target": "transition_reward only; disabled by default; gold outcome is not gated",
             },
             "normalization": (
                 "combine raw optimization components by configured weights, "
@@ -229,9 +232,11 @@ def write_rubric_artifact(
             "effective": settings["reasoning_effort"] or None,
         },
         "judge_rationale_mode": args.judge_rationale_mode,
-        "policy_output_example": policy_output_example(selected_dimensions, include_evidence=True),
-        "policy_system_prompt": build_policy_system_prompt(selected_dimensions, include_evidence=True),
-        "policy_user_prompt_template": build_policy_user_prompt("{situation}", selected_dimensions, include_evidence=True),
+        "policy_output_example": policy_output_example(selected_dimensions),
+        "policy_system_prompt": build_policy_system_prompt(selected_dimensions),
+        "policy_user_prompt_template": build_policy_user_prompt(
+            "{situation}", selected_dimensions
+        ),
         "system_prompt": build_judge_system_prompt(
             selected_dimensions,
             args.judge_rationale_mode,
@@ -359,6 +364,11 @@ def save_manifest(
             "failure_policy": args.judge_failure_policy,
         },
         "reward": {
+            "formula": (
+                "0.35 * mean_d[grounding_d * mean(validity_d, fidelity_d)] "
+                "+ 0.05 * coherence + 0.10 * transition + "
+                "0.50 * (0.8 * label + 0.2 * intensity) at default weights"
+            ),
             "supported_appraisal_dimensions": APPRAISAL_DIMENSIONS,
             "appraisal_dimensions": args.appraisal_dimensions,
             "appraisal_criteria": APPRAISAL_CRITERIA,
@@ -377,6 +387,10 @@ def save_manifest(
                 "labels": args.outcome_label_weight,
                 "intensities": args.outcome_intensity_weight,
             },
+            "outcome_label_reward": (
+                "example-level set F1 over the union of valence-tagged labels; "
+                "per-valence F1 values are diagnostics only"
+            ),
             "process_gate": {
                 "enabled": args.use_process_gate,
                 "mode": args.process_gate_mode,
@@ -391,10 +405,13 @@ def save_manifest(
                 ),
             },
             "transition_reward": (
-                "grounding_reward * evidence-validated judge.transition.score / 4"
+                "judge.transition.score / 4 by default; optional grounding gate"
             ),
-            "appraisal_reward": "mean of validity and experiencer fidelity across dimensions / 4",
-            "grounding_reward": "0.7 * mean + 0.3 * mean of the lowest two dimension grounding scores; invalid quotes score zero",
+            "appraisal_reward": (
+                "mean across dimensions of grounding * mean(dimension-specific "
+                "validity, experiencer fidelity)"
+            ),
+            "grounding_reward": "0.7 * mean + 0.3 * mean of the lowest two dimension grounding scores",
             "outcome_reward": (
                 "weighted_mean(gold_label_reward, gold_intensity_reward)"
             ),
@@ -414,6 +431,14 @@ def save_manifest(
             "judge_failure_handling": (
                 "return None in skip mode; raise in error mode"
             ),
+            "lightweight_eval_metrics": [
+                "appraisal_bleu",
+                "appraisal_rouge_l",
+                "positive/negative_example_f1",
+                "positive/negative_label_exact",
+                "positive/negative_intensity_rmse",
+                "reference_coverage",
+            ],
         },
         "data": data_summary,
         "wandb": wandb_summary,
