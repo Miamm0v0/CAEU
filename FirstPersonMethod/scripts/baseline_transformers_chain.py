@@ -19,6 +19,7 @@ from train_grpo.spec import (
 FULL_CHAIN_TASK = "full-chain"
 FULL_CHAIN_OUTPUT_TASKS = tuple(baseline.TASKS)
 CHAIN_EMOTION_TASK = "chain-emotion"
+CHAIN_PRIMARY_EMOTION_TASK = "chain-primary-emotion"
 CHAIN_EMOTION_OUTPUT_TASKS = (
     "positive-level",
     "negative-level",
@@ -55,7 +56,10 @@ POLICY_APPRAISAL_DIMENSIONS = tuple(APPRAISAL_DIMENSIONS[:5])
 EMOTION_LABEL_SPACE_CONFIG_KEY = "_emotion_label_space"
 EMOTION_OUTPUT_MODE_CONFIG_KEY = "_emotion_output_mode"
 EMOTION_OUTPUT_MODES = ("single-label", "multi-label")
+CHAIN_PRIMARY_EMOTION_MODES = ("intensity", "model")
+PRIMARY_EMOTION_FIELD = "primary_emotion"
 EVALUATION_ONLY_EMOTION_RANKING_FIELD = "evaluation_only_emotion_ranking"
+APPRAISAL_INSUFFICIENT_VALUE = "insufficient_information"
 EMOTION_LABEL_SPACES = {
     "carebench": {
         "positive": dict(sft_common.POSITIVE_LABEL_DESCRIPTIONS),
@@ -118,6 +122,15 @@ NATIVE_EMOTION_LABELS = {
         "trust",
         "no-emotion",
     ),
+}
+CAREBENCH_TO_CROWD_ENVENT_EMOTION = {
+    "glad": "joy",
+    "proud": "pride",
+    "angry": "anger",
+    "disgust": "disgust",
+    "sad": "sadness",
+    "ashamed": "shame",
+    "guilty": "guilt",
 }
 POLICY_TO_CAREBENCH_CORE_DIMENSION = {
     "relevance": "relevance",
@@ -737,6 +750,41 @@ def parse_chain_emotion_output(
     return policy_output, task_outputs
 
 
+def mapped_crowd_envent_emotion_candidates(
+    chain_emotion_output: Dict[str, Any],
+) -> List[str]:
+    """Map a parsed CAREBench emotion set to crowd-enVent candidates."""
+    emotion = _require_dict(chain_emotion_output.get("emotion"), "emotion")
+    candidates: List[str] = []
+    for field in ("positive_labels", "negative_labels"):
+        labels = emotion.get(field)
+        if not isinstance(labels, list):
+            raise ValueError(f"emotion.{field} must be an array")
+        for label in labels:
+            mapped = CAREBENCH_TO_CROWD_ENVENT_EMOTION.get(label)
+            if mapped is not None and mapped not in candidates:
+                candidates.append(mapped)
+    return candidates or ["no-emotion"]
+
+
+def parse_chain_primary_emotion_output(
+    raw_text: str,
+    candidate_labels: List[str],
+) -> Dict[str, str]:
+    payload = _extract_json_object(raw_text)
+    _require_exact_keys(payload, [PRIMARY_EMOTION_FIELD], "root")
+    raw_primary = payload[PRIMARY_EMOTION_FIELD]
+    if not isinstance(raw_primary, str):
+        raise ValueError(f"{PRIMARY_EMOTION_FIELD} must be a string")
+    primary = raw_primary.strip().casefold()
+    if primary not in candidate_labels:
+        raise ValueError(
+            f"{PRIMARY_EMOTION_FIELD}={raw_primary!r} is not in the mapped "
+            f"candidate set {candidate_labels}"
+        )
+    return {PRIMARY_EMOTION_FIELD: primary}
+
+
 def parse_direct_task_output(
     raw_text: str, prompt_cfg: Dict[str, Any], task: str
 ) -> Dict[str, Any]:
@@ -1026,7 +1074,13 @@ def build_chain_task_prompts(
     """Build a prompt that generates core appraisals and one target in one call."""
     if chain_task not in CHAIN_TASK_TO_OUTPUT_TASK:
         raise ValueError(f"Unsupported chain task: {chain_task}")
-    system_prompt, user_template = _prompt_template(prompt_cfg, chain_task)
+    template_name = chain_task
+    if (
+        chain_task == "chain-appraisals"
+        and emotion_label_space(prompt_cfg) == "crowd-envent"
+    ):
+        template_name = "chain-appraisals-crowd-envent"
+    system_prompt, user_template = _prompt_template(prompt_cfg, template_name)
     rating_keys, appraisal_statements, core_questions = _prompt_components(prompt_cfg)
     use_policy_schema = chain_task in GRPO_SCHEMA_CHAIN_TASKS
     reasoning_dimensions = (
@@ -1034,9 +1088,11 @@ def build_chain_task_prompts(
         if use_policy_schema
         else CORE_APPRAISAL_DIMENSIONS
     )
+    reasoning_value = "concise first-person answer"
+    if emotion_label_space(prompt_cfg) == "crowd-envent":
+        reasoning_value += f" or exactly {APPRAISAL_INSUFFICIENT_VALUE}"
     core_schema = {
-        dimension: "concise first-person answer"
-        for dimension in reasoning_dimensions
+        dimension: reasoning_value for dimension in reasoning_dimensions
     }
     reasoning_field = "appraisal_reasoning" if use_policy_schema else "core_appraisals"
     output_schema: Dict[str, Any] = {reasoning_field: core_schema}
@@ -1086,12 +1142,15 @@ def build_chain_emotion_prompts(
     system_template, user_template = _prompt_template(
         prompt_cfg, template_name
     )
+    reasoning_value = "concise first-person explanation"
+    if label_space == "crowd-envent":
+        reasoning_value += f" or exactly {APPRAISAL_INSUFFICIENT_VALUE}"
     if label_space == "carebench":
         output_schema = policy_output_example(POLICY_APPRAISAL_DIMENSIONS)
     elif use_valenced_multilabel:
         output_schema = {
             "appraisal_reasoning": {
-                dimension: "concise first-person explanation"
+                dimension: reasoning_value
                 for dimension in POLICY_APPRAISAL_DIMENSIONS
             },
             "emotion": {
@@ -1105,7 +1164,7 @@ def build_chain_emotion_prompts(
     else:
         output_schema = {
             "appraisal_reasoning": {
-                dimension: "concise first-person explanation"
+                dimension: reasoning_value
                 for dimension in POLICY_APPRAISAL_DIMENSIONS
             },
             "emotion": native_emotion_output_schema(prompt_cfg),
@@ -1132,6 +1191,43 @@ def build_chain_emotion_prompts(
             f"Unknown placeholder in [templates.{CHAIN_EMOTION_TASK}]: {exc}"
         ) from exc
     return system_prompt, user_prompt
+
+
+def build_chain_primary_emotion_prompts(
+    prompt_cfg: Dict[str, Any],
+    scenario: str,
+    chain_emotion_output: Dict[str, Any],
+) -> tuple[str, str, List[str]]:
+    """Build the third call that selects one mapped primary emotion."""
+    if emotion_label_space(prompt_cfg) != "carebench":
+        raise ValueError(
+            f"{CHAIN_PRIMARY_EMOTION_TASK} requires the CAREBench label space"
+        )
+    reasoning = _require_dict(
+        chain_emotion_output.get("appraisal_reasoning"), "appraisal_reasoning"
+    )
+    _require_exact_keys(
+        reasoning, list(POLICY_APPRAISAL_DIMENSIONS), "appraisal_reasoning"
+    )
+    candidate_labels = mapped_crowd_envent_emotion_candidates(
+        chain_emotion_output
+    )
+    system_prompt, user_template = _prompt_template(
+        prompt_cfg, CHAIN_PRIMARY_EMOTION_TASK
+    )
+    user_prompt = user_template.format(
+        scenario=scenario,
+        appraisal_reasoning=json.dumps(
+            reasoning, ensure_ascii=False, indent=2
+        ),
+        candidate_labels=json.dumps(candidate_labels, ensure_ascii=False),
+        output_schema=json.dumps(
+            {PRIMARY_EMOTION_FIELD: candidate_labels[0]},
+            ensure_ascii=False,
+            indent=2,
+        ),
+    )
+    return system_prompt, user_prompt, candidate_labels
 
 
 def build_direct_task_prompts(
@@ -1231,6 +1327,36 @@ def process_chain_emotion(
     return policy_output, task_outputs, []
 
 
+def process_chain_primary_emotion(
+    client: baseline.BaseLLMClient,
+    prompt_cfg: Dict[str, Any],
+    scenario: str,
+    chain_emotion_output: Dict[str, Any],
+) -> tuple[Optional[Dict[str, str]], List[Dict[str, Any]]]:
+    """Select one primary emotion in a separate call after chain-emotion."""
+    try:
+        system_prompt, user_prompt, candidates = (
+            build_chain_primary_emotion_prompts(
+                prompt_cfg, scenario, chain_emotion_output
+            )
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        return None, [{"error": f"{CHAIN_PRIMARY_EMOTION_TASK} input error: {exc}"}]
+    response = client.chat(system_prompt, user_prompt)
+    try:
+        output = parse_chain_primary_emotion_output(
+            response.content, candidates
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        return None, [
+            {
+                "error": f"{CHAIN_PRIMARY_EMOTION_TASK} parse error: {exc}",
+                "raw_output": response.content,
+            }
+        ]
+    return output, []
+
+
 def process_chain_task(
     client: baseline.BaseLLMClient,
     prompt_cfg: Dict[str, Any],
@@ -1257,11 +1383,13 @@ def resolve_selected_tasks(
     task_value: str,
     chain_all_emotion_mode: str = "separate",
     chain_core_appraisals_source: str = "separate",
+    chain_primary_emotion_mode: str = "intensity",
 ) -> List[str]:
     """Expand aggregate task names while retaining the original task order."""
     normalized = task_value.strip().lower()
     normalized_emotion_mode = chain_all_emotion_mode.strip().lower()
     normalized_core_source = chain_core_appraisals_source.strip().lower()
+    normalized_primary_mode = chain_primary_emotion_mode.strip().lower()
     if normalized_emotion_mode not in CHAIN_ALL_EMOTION_MODES:
         raise ValueError(
             "Invalid chain-all emotion mode: {}. Valid values: {}".format(
@@ -1276,6 +1404,13 @@ def resolve_selected_tasks(
                 ", ".join(CHAIN_CORE_APPRAISAL_SOURCES),
             )
         )
+    if normalized_primary_mode not in CHAIN_PRIMARY_EMOTION_MODES:
+        raise ValueError(
+            "Invalid chain primary emotion mode: {}. Valid values: {}".format(
+                chain_primary_emotion_mode,
+                ", ".join(CHAIN_PRIMARY_EMOTION_MODES),
+            )
+        )
     if normalized == "all":
         return list(baseline.TASKS)
     if normalized == OFFICIAL_DIRECT_TASK:
@@ -1288,9 +1423,19 @@ def resolve_selected_tasks(
     if normalized == CHAIN_ALL_TASK:
         if normalized_emotion_mode == CHAIN_EMOTION_TASK:
             selected = list(CHAIN_ALL_WITH_JOINT_EMOTION_TASKS)
+            if normalized_primary_mode == "model":
+                selected.insert(
+                    selected.index(CHAIN_EMOTION_TASK) + 1,
+                    CHAIN_PRIMARY_EMOTION_TASK,
+                )
             if normalized_core_source == CHAIN_EMOTION_TASK:
                 selected.remove("chain-core-appraisals")
             return selected
+        if normalized_primary_mode == "model":
+            raise ValueError(
+                "--chain_primary_emotion_mode model requires "
+                "--chain_all_emotion_mode chain-emotion"
+            )
         if normalized_core_source == CHAIN_EMOTION_TASK:
             raise ValueError(
                 "--chain_core_appraisals_source chain-emotion requires "
@@ -1300,7 +1445,12 @@ def resolve_selected_tasks(
     if normalized == FULL_CHAIN_TASK:
         return [FULL_CHAIN_TASK]
     if normalized == CHAIN_EMOTION_TASK:
-        return [CHAIN_EMOTION_TASK]
+        tasks = [CHAIN_EMOTION_TASK]
+        if normalized_primary_mode == "model":
+            tasks.append(CHAIN_PRIMARY_EMOTION_TASK)
+        return tasks
+    if normalized == CHAIN_PRIMARY_EMOTION_TASK:
+        return [CHAIN_PRIMARY_EMOTION_TASK]
     if normalized_core_source == CHAIN_EMOTION_TASK:
         raise ValueError(
             "--chain_core_appraisals_source chain-emotion is only valid with "
@@ -1316,6 +1466,7 @@ def resolve_selected_tasks(
         "all",
         CHAIN_ALL_TASK,
         CHAIN_EMOTION_TASK,
+        CHAIN_PRIMARY_EMOTION_TASK,
         OFFICIAL_DIRECT_TASK,
         FULL_CHAIN_TASK,
         *baseline.TASKS,

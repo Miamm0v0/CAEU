@@ -7,7 +7,6 @@ import argparse
 import csv
 import json
 import random
-import re
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -38,12 +37,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--subset", choices=list(SUBSETS), default="strict-validated")
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--sample_seed", type=int, default=42)
-    parser.add_argument("--no_mask_emotion_words", action="store_true")
-    parser.add_argument(
-        "--first_person_prefix",
-        default="I experienced the following situation:",
-        help="Prefix added without revealing the gold emotion",
-    )
     parser.add_argument("--indent", type=int, default=2)
     return parser
 
@@ -71,26 +64,11 @@ def parse_rating(value: str, location: str) -> int:
     return parsed
 
 
-def mask_emotion_cues(text: str) -> str:
-    """Apply one uniform mask to dataset ellipses and all class-name tokens."""
-    masked = re.sub(r"\.{3,}", " [EMOTION] ", text)
-    label_words = [label for label in EMOTION_LABELS if label != "no-emotion"]
-    pattern = re.compile(
-        r"\b(?:" + "|".join(re.escape(label) for label in label_words) + r")\b",
-        re.IGNORECASE,
-    )
-    masked = pattern.sub("[EMOTION]", masked)
-    masked = re.sub(r"(?:\s*\[EMOTION\]\s*){2,}", " [EMOTION] ", masked)
-    masked = re.sub(r"\s+", " ", masked).strip()
-    return masked
-
-
-def first_person_situation(text: str, prefix: str, mask_words: bool) -> str:
-    cleaned = mask_emotion_cues(text) if mask_words else re.sub(r"\s+", " ", text).strip()
-    if not cleaned:
-        raise ValueError("hidden_emo_text is empty after preprocessing")
-    normalized_prefix = prefix.strip()
-    return f"{normalized_prefix} {cleaned}" if normalized_prefix else cleaned
+def first_person_situation(text: str) -> str:
+    situation = text.strip()
+    if not situation:
+        raise ValueError("generated_text is empty after preprocessing")
+    return situation
 
 
 def validation_index(rows: Iterable[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
@@ -145,9 +123,6 @@ def mean_validation_ratings(rows: list[dict[str, str]]) -> dict[str, float]:
 def build_sample(
     row: dict[str, str],
     validation_rows: list[dict[str, str]],
-    *,
-    mask_words: bool,
-    prefix: str,
 ) -> dict[str, Any]:
     text_id = row.get("text_id", "").strip()
     if not text_id:
@@ -155,9 +130,9 @@ def build_sample(
     emotion = row.get("emotion", "").strip().lower()
     if emotion not in EMOTION_LABELS:
         raise ValueError(f"{text_id}: invalid emotion {emotion!r}")
-    hidden_text = row.get("hidden_emo_text", "").strip()
-    if not hidden_text:
-        raise ValueError(f"{text_id}: missing hidden_emo_text")
+    generated_text = row.get("generated_text", "").strip()
+    if not generated_text:
+        raise ValueError(f"{text_id}: missing generated_text")
     ratings = {
         field: parse_rating(row.get(field, ""), f"{text_id}.{field}")
         for field in APPRAISAL_FIELDS
@@ -170,7 +145,7 @@ def build_sample(
     return {
         "id": f"crowd-envent-{text_id}",
         "source_id": text_id,
-        "situation": first_person_situation(hidden_text, prefix, mask_words),
+        "situation": first_person_situation(generated_text),
         "reference": {
             "appraisal_ratings": ratings,
             "emotion": {
@@ -190,8 +165,8 @@ def build_sample(
             "round_number": row.get("round_number", ""),
             "confirmed_real": row.get("did_you_lie?", "").strip() == CONFIRMED_REAL,
             "reality_response": row.get("did_you_lie?", "").strip(),
-            "emotion_words_masked": mask_words,
-            "original_hidden_emo_text": hidden_text,
+            "emotion_words_masked": False,
+            "original_generated_text": generated_text,
         },
     }
 
@@ -230,8 +205,6 @@ def main() -> int:
         build_sample(
             row,
             validations.get(row["text_id"], []),
-            mask_words=not args.no_mask_emotion_words,
-            prefix=args.first_person_prefix,
         )
         for row in selected_rows
     ]
@@ -239,16 +212,16 @@ def main() -> int:
         raise ValueError("Selection produced no crowd-enVent samples")
     payload = {
         "dataset": "crowd-enVent-2023",
-        "schema_version": "first-person-policy-eval-v1",
+        "schema_version": "first-person-policy-eval-v3",
         "subset": args.subset,
         "source": {
             "generation_tsv": str(args.generation_tsv),
             "validation_tsv": str(args.validation_tsv),
         },
         "preprocessing": {
-            "uses_hidden_emo_text": True,
-            "mask_all_emotion_class_words": not args.no_mask_emotion_words,
-            "first_person_prefix": args.first_person_prefix,
+            "source_text_field": "generated_text",
+            "uses_hidden_emo_text": False,
+            "emotion_words_masked": False,
             "sample_seed": args.sample_seed,
         },
         "stats": {

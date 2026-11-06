@@ -226,6 +226,35 @@ Constraint:
 4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
 My Answer:"""
 
+[templates.chain-appraisals-crowd-envent]
+system = """You reason about an emotional situation from the perspective of the person who experienced it. Reason in the first person about the five appraisal dimensions before predicting appraisal ratings. For each appraisal dimension, write a concise natural-language first-person statement only when the situation provides enough evidence. If the situation does not provide enough evidence for a dimension, use exactly "insufficient_information" as that dimension's value. Do not invent content merely to fill all five dimensions. Return exactly one valid JSON object without markdown or commentary."""
+user = """Instruction: Imagine you are the person who wrote the following event. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First reason about all five appraisal dimensions in the first person. Then use that appraisal reasoning to rate every appraisal statement. Think back to the moment when the event had just ended.
+My Situation: {scenario}
+
+Step 1 — Core appraisals:
+{core_appraisal_questions}
+
+For each dimension, write one concise first-person appraisal when supported by the situation. Otherwise use exactly "insufficient_information" for that dimension.
+
+Step 2 — Appraisal statements:
+{appraisal_statements}
+Options for every statement:
+- 1: Strongly disagree
+- 2: Somewhat disagree
+- 3: Neither agree nor disagree
+- 4: Somewhat agree
+- 5: Strongly agree
+
+Output format:
+{output_schema}
+
+Constraint:
+1. Return exactly one valid JSON object matching the output format, with appraisal_reasoning first and appraisals second.
+2. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts.
+3. Every appraisal item must contain an integer score and its exactly matching option label.
+4. Use exactly the required keys. Do not use markdown or add text outside the JSON object.
+My Answer:"""
+
 [templates.chain-positive-level]
 user = """Instruction: Imagine you are the person who wrote the following story. Read it carefully and internalize the feelings and situation described. Complete this task in one response. First answer all five core appraisal questions in the first person. Then use that appraisal reasoning to judge how positive the situation made you feel immediately after it ended.
 My Situation: {scenario}
@@ -370,8 +399,28 @@ null values.
 Return exactly this structure and no other keys:
 {output_schema}"""
 
+[templates.chain-primary-emotion]
+system = """You select one primary emotion for a first-person experiencer. Use only the supplied Situation, appraisal reasoning, and candidate labels. Return exactly one valid JSON object without markdown or commentary."""
+user = """Select the single most central emotion experienced immediately after the event.
+
+Situation:
+{scenario}
+
+Five-dimensional Appraisal Reasoning:
+{appraisal_reasoning}
+
+Mapped crowd-enVent candidate set:
+{candidate_labels}
+
+Choose exactly one label from the candidate set. Consider the Situation and all
+five appraisals; do not simply select the first candidate. If the only candidate
+is no-emotion, select no-emotion.
+
+Return exactly this structure and no other keys:
+{output_schema}"""
+
 [templates.chain-emotion-multilabel-crowd-envent]
-system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. For each appraisal dimension, write a concise natural-language first-person statement only when the situation provides enough evidence. If the situation does not provide enough evidence for a dimension, use exactly "insufficient_information" as that dimension's value. Do not invent content merely to fill all five dimensions. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
 user = """Imagine that you are the person who wrote the event below. Infer
 your cognitive appraisals and how you felt immediately after the event.
 
@@ -382,9 +431,9 @@ Write one concise, natural-language first-person appraisal for each selected
 dimension:
 {appraisal_definition_lines}
 
-If a selected dimension is not clearly implicated by the event, state that
-there is no clear basis for that appraisal. Do not invent information in order
-to fill a dimension.
+For each dimension, write one concise first-person appraisal when supported by
+the situation. Otherwise use exactly "insufficient_information" for that
+dimension. Do not invent information in order to fill a dimension.
 
 Keep the native CAEU emotion object unchanged:
 - positive_intensity: integer from 0 to 6
@@ -439,7 +488,7 @@ Return exactly this structure and no other keys:
 {output_schema}"""
 
 [templates.chain-emotion-crowd-envent]
-system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. Every appraisal must be a concise natural-language first-person statement grounded only in the event. When a selected dimension is not clearly implicated, explicitly state that the event provides no clear basis for that appraisal instead of inventing a reaction. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
+system = """You model the first-person cognitive appraisal process that connects an event to emotion. Analyze the event using exactly the selected appraisal dimensions ({appraisal_dimension_names}) before predicting emotion. For each appraisal dimension, write a concise natural-language first-person statement only when the situation provides enough evidence. If the situation does not provide enough evidence for a dimension, use exactly "insufficient_information" as that dimension's value. Do not invent content merely to fill all five dimensions. Do not invent facts, goals, intentions, relationships, consequences, or value conflicts. Return exactly one valid JSON object without markdown or commentary."""
 user = """Imagine that you are the person who wrote the event below. Infer
 your cognitive appraisals and how you felt immediately after the event.
 
@@ -450,9 +499,9 @@ Write one concise, natural-language first-person appraisal for each selected
 dimension:
 {appraisal_definition_lines}
 
-If a selected dimension is not clearly implicated by the event, state that
-there is no clear basis for that appraisal. Do not invent information in order
-to fill a dimension.
+For each dimension, write one concise first-person appraisal when supported by
+the situation. Otherwise use exactly "insufficient_information" for that
+dimension. Do not invent information in order to fill a dimension.
 
 Predict emotion in the native crowd-enVent format. Choose exactly one label
 from this list:

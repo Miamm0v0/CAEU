@@ -214,15 +214,18 @@ def emotion_candidate_hit_metrics(
         label: {"support": 0, "hits": 0} for label in EMOTION_LABELS
     }
     for gold_label, prediction in zip(gold, predictions):
-        ranked_candidates, source = _candidate_ranking(prediction)
-        candidates = set(ranked_candidates)
-        if source in {
-            "direct_multilabel_labels",
-            "chain_evaluation_only_ranking",
-        }:
+        raw_candidates = prediction.get("emotion_candidate_labels")
+        if raw_candidates is not None and not prediction.get("missing_prediction"):
+            candidate_sequence = _validated_candidate_sequence(
+                raw_candidates, "emotion_candidate_labels"
+            )
+            source = "explicit_candidate_set"
             explicit_candidate_samples += 1
-        elif source == "single_label":
-            single_label_fallback_samples += 1
+        else:
+            candidate_sequence, source = _candidate_ranking(prediction)
+            if source == "single_label":
+                single_label_fallback_samples += 1
+        candidates = set(candidate_sequence)
         invalid = sorted(candidates - set(EMOTION_LABELS))
         if invalid:
             raise ValueError(
@@ -250,9 +253,9 @@ def emotion_candidate_hit_metrics(
         "single_label_fallback_samples": single_label_fallback_samples,
         "per_gold_label": per_gold_label,
         "definition": (
-            "Author gold label is contained anywhere in the same explicit "
-            "model ranking used by Hit@k. Single-label predictions contain only "
-            "their predicted label; missing predictions are always misses."
+            "Author gold label is contained anywhere in the explicit model "
+            "candidate set. If no candidate set is saved, the single predicted "
+            "label is used; missing predictions are always misses."
         ),
     }
 
@@ -508,7 +511,31 @@ def appraisal_report(
     predictions: list[Mapping[str, Any]],
     *,
     reference_key: str,
+    fields: tuple[str, ...] = APPRAISAL_FIELDS,
 ) -> dict[str, Any]:
+    if fields != APPRAISAL_FIELDS:
+        return {
+            f"overall_{len(fields)}_ratings": _ratings_for_scope(
+                samples,
+                predictions,
+                fields,
+                reference_key=reference_key,
+            ),
+            "evaluated_fields": list(fields),
+            "by_source_rating": {
+                field: _ratings_for_scope(
+                    samples,
+                    predictions,
+                    [field],
+                    reference_key=reference_key,
+                )
+                for field in fields
+            },
+            "aggregation_note": (
+                "Only the explicitly mapped CAREBench/crowd-enVent rating "
+                "pairs are evaluated for this prediction protocol."
+            ),
+        }
     by_source = {
         field: _ratings_for_scope(
             samples, predictions, [field], reference_key=reference_key
@@ -540,6 +567,37 @@ def appraisal_report(
             "are reported separately because the Policy uses five dimensions."
         ),
     }
+
+
+def evaluated_appraisal_fields(
+    predictions: list[Mapping[str, Any]],
+) -> tuple[str, ...]:
+    declared: set[tuple[str, ...]] = set()
+    allowed = set(APPRAISAL_FIELDS)
+    for prediction in predictions:
+        if prediction.get("missing_prediction"):
+            continue
+        raw_fields = prediction.get("evaluated_appraisal_fields")
+        if raw_fields is None:
+            continue
+        if not isinstance(raw_fields, list) or not raw_fields:
+            raise ValueError("evaluated_appraisal_fields must be a non-empty list")
+        fields = tuple(str(field) for field in raw_fields)
+        if len(fields) != len(set(fields)):
+            raise ValueError("evaluated_appraisal_fields contains duplicates")
+        invalid = sorted(set(fields) - allowed)
+        if invalid:
+            raise ValueError(
+                f"evaluated_appraisal_fields contains unknown fields: {invalid}"
+            )
+        declared.add(fields)
+    if not declared:
+        return APPRAISAL_FIELDS
+    if len(declared) != 1:
+        raise ValueError(
+            "Predictions declare inconsistent evaluated_appraisal_fields"
+        )
+    return next(iter(declared))
 
 
 def build_metrics_report(
@@ -579,6 +637,8 @@ def build_metrics_report(
         predictions.append(prediction)
     if not samples:
         raise ValueError("No valid crowd-enVent predictions are available")
+
+    appraisal_fields = evaluated_appraisal_fields(predictions)
 
     author_gold_labels = [sample["reference"]["emotion"]["label"] for sample in samples]
     evaluated_emotions = [_emotion_for_metrics(prediction) for prediction in predictions]
@@ -642,7 +702,12 @@ def build_metrics_report(
             ),
         },
         "author_self_report": {
-            "appraisals": appraisal_report(samples, predictions, reference_key="author"),
+            "appraisals": appraisal_report(
+                samples,
+                predictions,
+                reference_key="author",
+                fields=appraisal_fields,
+            ),
             "emotion_classification": classification_metrics(
                 author_gold_labels, predicted_labels
             ),
@@ -661,7 +726,12 @@ def build_metrics_report(
         },
         "observer_robustness": {
             "appraisals": (
-                appraisal_report(samples, predictions, reference_key="observer")
+                appraisal_report(
+                    samples,
+                    predictions,
+                    reference_key="observer",
+                    fields=appraisal_fields,
+                )
                 if observer_appraisal_available
                 else None
             ),

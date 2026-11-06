@@ -59,6 +59,7 @@ from baseline_transformers_chain import (
     CHAIN_CORE_APPRAISAL_SOURCES,
     CHAIN_EMOTION_OUTPUT_TASKS,
     CHAIN_EMOTION_TASK,
+    CHAIN_PRIMARY_EMOTION_TASK,
     CHAIN_TASKS,
     CHAIN_TASK_TO_OUTPUT_TASK,
     CORE_APPRAISAL_DIMENSIONS,
@@ -78,6 +79,7 @@ from baseline_transformers_chain import (
     parse_full_chain_output,
     process_chain_task,
     process_chain_emotion,
+    process_chain_primary_emotion,
     process_direct_task,
     process_full_chain,
     resolve_selected_tasks,
@@ -303,6 +305,7 @@ def _run_task(
     scenario: str,
     task: str,
     chain_core_appraisals_source: str = "separate",
+    chain_emotion_output: Optional[Dict[str, Any]] = None,
 ) -> tuple[
     Optional[Dict[str, Any]],
     Optional[Dict[str, Dict[str, Any]]],
@@ -328,6 +331,18 @@ def _run_task(
                 include_core_appraisals=(
                     chain_core_appraisals_source == CHAIN_EMOTION_TASK
                 ),
+            )
+        elif task == CHAIN_PRIMARY_EMOTION_TASK:
+            if chain_emotion_output is None:
+                raise ValueError(
+                    f"{CHAIN_PRIMARY_EMOTION_TASK} requires a parsed "
+                    f"{CHAIN_EMOTION_TASK} trajectory"
+                )
+            output, issues = process_chain_primary_emotion(
+                client,
+                prompt_cfg,
+                scenario,
+                chain_emotion_output,
             )
         elif task in CHAIN_TASK_TO_OUTPUT_TASK:
             output, derived_output, issues = process_chain_task(
@@ -485,12 +500,41 @@ def _process_one_sample(
                 sample_result["skipped"][task] += 1
                 continue
 
+        chain_emotion_output: Optional[Dict[str, Any]] = None
+        if task == CHAIN_PRIMARY_EMOTION_TASK:
+            prerequisite = (
+                model_base_dir / CHAIN_EMOTION_TASK / f"{sample_id}.json"
+            )
+            try:
+                with prerequisite.open("r", encoding="utf-8") as handle:
+                    loaded = json.load(handle)
+                if not isinstance(loaded, dict):
+                    raise ValueError("trajectory must be a JSON object")
+                chain_emotion_output = loaded
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                _record_invalid(
+                    sample_result,
+                    task,
+                    sample_id,
+                    input_source,
+                    [
+                        {
+                            "error": (
+                                f"Cannot load required {CHAIN_EMOTION_TASK} "
+                                f"trajectory {prerequisite}: {exc}"
+                            )
+                        }
+                    ],
+                )
+                continue
+
         output, derived_outputs, derived_output, issues, is_ambiguous = _run_task(
             client,
             prompt_cfg,
             scenario,
             task,
             chain_core_appraisals_source,
+            chain_emotion_output,
         )
         if issues or output is None:
             _record_invalid(sample_result, task, sample_id, input_source, issues)
@@ -625,6 +669,7 @@ def execute(args: argparse.Namespace) -> int:
         args.task,
         args.chain_all_emotion_mode,
         args.chain_core_appraisals_source,
+        getattr(args, "chain_primary_emotion_mode", "intensity"),
     )
     input_samples = resolve_input_samples(args)
     if not input_samples:
@@ -632,7 +677,13 @@ def execute(args: argparse.Namespace) -> int:
         return 0
 
     prompt_cfg = baseline.load_toml(Path(args.prompt_path))
-    set_emotion_label_space(prompt_cfg, args.dataset_format)
+    emotion_label_space_override = getattr(
+        args, "emotion_label_space_override", ""
+    )
+    set_emotion_label_space(
+        prompt_cfg,
+        emotion_label_space_override or args.dataset_format,
+    )
     if hasattr(args, "emotion_output_mode"):
         set_emotion_output_mode(prompt_cfg, args.emotion_output_mode)
     client = TransformersClient(

@@ -47,13 +47,17 @@ from crowd_envent_schema import (
     CHAIN_TARGETS,
     DIRECT_SYSTEM_PROMPT,
     EMOTION_LABELS,
+    OFFICIAL_DIRECT_APPRAISALS_SYSTEM_PROMPT,
+    OFFICIAL_DIRECT_EMOTION_SYSTEM_PROMPT,
     build_carebench_aligned_prompt,
     build_chain_target_prompt,
+    build_official_direct_prompt,
     normalize_emotion,
     normalize_ratings,
     normalize_reasoning,
     parse_carebench_aligned_response,
     parse_chain_target_response,
+    parse_official_direct_response,
     parse_policy_response,
     build_policy_prompt,
 )
@@ -69,7 +73,13 @@ from covidet_api_client import (
 
 
 DEFAULT_EVAL_FILE = REPO_ROOT / "FirstPersonMethod/data/crowd_envent/test.json"
-GENERATION_SCHEMAS = ("chain", "chain-all", "direct", "carebench")
+GENERATION_SCHEMAS = (
+    "chain",
+    "chain-all",
+    "direct",
+    "official-direct",
+    "carebench",
+)
 EVALUATION_ONLY_EMOTION_RANKING_FIELD = "evaluation_only_emotion_ranking"
 
 
@@ -120,7 +130,9 @@ def build_parser(*, fixed_mode: str | None = None) -> argparse.ArgumentParser:
             help=(
                 "chain makes one joint reasoning/ratings/emotion call; chain-all "
                 "makes separate reasoning->ratings and reasoning->emotion calls; "
-                "direct predicts outcomes without natural-language reasoning; "
+                "direct predicts both outcomes jointly without natural-language "
+                "reasoning; official-direct makes separate situation->ratings "
+                "and situation->emotion calls without appraisal reasoning; "
                 "carebench makes separate calls with CAREBench appraisal "
                 "ratings and a native crowd-enVent emotion output, then "
                 "projects the ratings to native metrics fields"
@@ -217,7 +229,11 @@ def build_parser(*, fixed_mode: str | None = None) -> argparse.ArgumentParser:
         model.add_argument("--seed", type=int, default=42)
 
         api = parser.add_argument_group("Policy API")
-        api.add_argument("--api_provider", choices=["openai", "glm"], default="openai")
+        api.add_argument(
+            "--api_provider",
+            choices=["openai", "yinli-openai", "glm", "yinli-glm"],
+            default="openai",
+        )
         api.add_argument("--api_model", type=str, default="")
         api.add_argument("--api_config", type=str, default="")
         api.add_argument("--api_provider_section", type=str, default="")
@@ -237,6 +253,16 @@ def build_parser(*, fixed_mode: str | None = None) -> argparse.ArgumentParser:
             "--api_thinking",
             choices=["auto", "enabled", "disabled"],
             default="auto",
+        )
+        api.add_argument(
+            "--api_reasoning_effort",
+            choices=["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"],
+            default="auto",
+        )
+        api.add_argument(
+            "--api_omit_temperature",
+            action="store_true",
+            help="Omit temperature/top_p for reasoning models that reject them.",
         )
         api.add_argument("--api_timeout", type=float, default=180.0)
         api.add_argument("--api_max_retries", type=int, default=3)
@@ -601,6 +627,17 @@ def generate_one(
             if chain_target == "appraisals"
             else CAREBENCH_EMOTION_SYSTEM_PROMPT
         )
+    elif args.generation_schema == "official-direct":
+        if chain_target not in CHAIN_TARGETS:
+            raise ValueError(
+                "chain_target must be one of "
+                f"{list(CHAIN_TARGETS)} for official-direct"
+            )
+        system_prompt = (
+            OFFICIAL_DIRECT_APPRAISALS_SYSTEM_PROMPT
+            if chain_target == "appraisals"
+            else OFFICIAL_DIRECT_EMOTION_SYSTEM_PROMPT
+        )
     else:
         if chain_target is not None:
             raise ValueError("chain_target is only valid for chain-style generation")
@@ -619,6 +656,12 @@ def generate_one(
                 )
             elif args.generation_schema == "carebench":
                 user_prompt = build_carebench_aligned_prompt(
+                    sample["situation"],
+                    chain_target,
+                    correction=correction,
+                )
+            elif args.generation_schema == "official-direct":
+                user_prompt = build_official_direct_prompt(
                     sample["situation"],
                     chain_target,
                     correction=correction,
@@ -650,6 +693,11 @@ def generate_one(
                 parsed = parse_chain_target_response(response.content, chain_target)
             elif args.generation_schema == "carebench":
                 parsed = parse_carebench_aligned_response(
+                    response.content,
+                    chain_target,
+                )
+            elif args.generation_schema == "official-direct":
+                parsed = parse_official_direct_response(
                     response.content,
                     chain_target,
                 )
@@ -704,7 +752,8 @@ def generate_predictions(
     print(
         f"[generate] selected={len(samples)} existing={len(samples)-len(pending)} "
         f"pending={len(pending)} schema={args.generation_schema} "
-        f"calls_per_sample={2 if args.generation_schema in {'chain-all', 'carebench'} else 1}"
+        "calls_per_sample="
+        f"{2 if args.generation_schema in {'chain-all', 'official-direct', 'carebench'} else 1}"
     )
     if not pending:
         return existing
@@ -716,7 +765,7 @@ def generate_predictions(
         iterator = pending
     valid = invalid = 0
     for sample in iterator:
-        if args.generation_schema in {"chain-all", "carebench"}:
+        if args.generation_schema in {"chain-all", "official-direct", "carebench"}:
             parsed_by_target: dict[str, dict[str, Any] | None] = {}
             metadata_by_target: dict[str, dict[str, Any]] = {}
             attempts_by_target: dict[str, list[dict[str, Any]]] = {}
@@ -803,6 +852,26 @@ def generate_predictions(
                 "projection": {
                     "appraisals": "carebench_statement_projection_v1",
                     "emotion": "native_crowd_envent_single_label",
+                },
+            }
+        elif args.generation_schema == "official-direct":
+            appraisal_branch = parsed_by_target["appraisals"]
+            emotion_branch = parsed_by_target["emotion"]
+            assert appraisal_branch is not None and emotion_branch is not None
+            record = {
+                "sample_id": sample["id"],
+                "source_id": sample.get("source_id"),
+                "generation_schema": "official-direct",
+                "appraisal_ratings": appraisal_branch["appraisal_ratings"],
+                "emotion": emotion_branch["emotion"],
+                "generation": metadata_by_target,
+                "attempt_count": {
+                    target: len(attempts_by_target[target])
+                    for target in CHAIN_TARGETS
+                },
+                "raw_output": {
+                    target: attempts_by_target[target][-1]["raw_output"]
+                    for target in CHAIN_TARGETS
                 },
             }
         else:

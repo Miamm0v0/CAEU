@@ -6,9 +6,9 @@ ratings and emotions without training or tuning on crowd-enVent.
 ## 1. Prepare the primary external test set
 
 The default selects the 653 descriptions that are both confirmed real events
-and included in the five-annotator validation set.  It uses `hidden_emo_text`,
-masks all 12 emotion class-name tokens and dataset ellipses uniformly, and adds
-a non-leaking first-person prefix.
+and included in the five-annotator validation set. It uses the original
+`generated_text` directly: emotion words are not masked, and no extra
+first-person prefix is added to the situation.
 
 ```bash
 python crowd-envent_utils/prepare_crowd_envent_eval.py \
@@ -27,10 +27,17 @@ rows.
 
 `--generation_schema` has two meaningful choices:
 
-- `chain` (default) runs two appraisal-mediated branches: situation -> five
-  appraisals -> CAREBench ratings, and situation -> five appraisals -> native
-  crowd-enVent emotion. The converter maps the CAREBench ratings to the 21
-  crowd-enVent fields.
+- `chain` (default) fully reuses the CAREBench generation contract in two
+  branches: situation -> five appraisal explanations -> all 22 CAREBench
+  appraisal ratings, and situation -> five appraisal explanations -> the
+  CAREBench 20-class valenced multi-label emotion object with positive and
+  negative intensities. Only five exact rating correspondences are retained
+  for crowd-enVent evaluation:
+  `accountability.self -> self_responsblt`,
+  `accountability.other -> other_responsblt`,
+  `certainty.predictability -> predict_event`,
+  `relevance.urgency -> urgency`, and
+  `control.effortful -> effort`.
 - `official-direct` follows the official paper's separate T->A and T->E task
   decomposition: situation -> 21 native ratings, and situation -> one of the 13
   native emotion labels plus 1--5 intensity. It does not generate appraisal
@@ -39,7 +46,7 @@ rows.
 ```bash
 CUDA_VISIBLE_DEVICES=0 python crowd-envent_utils/generate_policy_crowd_envent.py \
   --generation_schema chain \
-  --emotion_output_mode single-label \
+  --chain_primary_emotion_mode model \
   --eval_file FirstPersonMethod/data/crowd_envent/test.json \
   --model /path/to/adapter-or-model \
   --model_is_adapter \
@@ -70,26 +77,40 @@ CUDA_VISIBLE_DEVICES=0 python crowd-envent_utils/generate_policy_crowd_envent.py
   --predictions_file output/crowd-envent/model-name/official-direct/predictions.jsonl
 ```
 
-Both schemas make exactly two model calls per sample. A sample is valid only
-when both branches pass strict parsing.
+By default, both schemas make two model calls per sample. With
+`--generation_schema chain --chain_primary_emotion_mode model`, chain makes
+three calls: one for five-dimensional reasoning plus 22 ratings, one for
+five-dimensional reasoning plus CAREBench multi-label emotion and intensities,
+and one that only selects a primary emotion from the mapped candidate set using
+the Situation and the second call's reasoning. A sample is valid only when all
+required calls pass strict parsing. The default `intensity` mode preserves the
+two-call protocol and chooses the primary label deterministically.
 
-Emotion output is controlled independently with
-`--emotion_output_mode {single-label,multi-label}`:
+In `chain` runs, the five natural-language appraisal keys remain present and
+the generated structured ratings retain all 22 CAREBench fields. The converted
+prediction also retains all 22 fields, but appraisal metrics are deliberately
+computed only over the five mappings listed above. The remaining native
+crowd-enVent fields are compatibility placeholders and are not scored.
+
+For `chain`, emotion output is always the CAREBench positive/negative
+multi-label schema; `--emotion_output_mode` controls only `official-direct`:
 
 | Generation schema | `single-label` (default) | `multi-label` |
 | --- | --- | --- |
-| `chain` | five appraisals -> one native label and intensity | five appraisals -> unchanged CAEU positive/negative output plus an evaluation-only ranking |
+| `chain` | CAREBench valenced multi-label output (option is ignored) | CAREBench valenced multi-label output |
 | `official-direct` | situation -> one of 13 labels and intensity | situation -> a ranked list chosen from the 13 labels and one intensity |
 
 For `official-direct + multi-label`, labels are ordered from most to least
 likely. The converter uses the first label for standard crowd-enVent
 single-label metrics and preserves the ranking in `multilabel_emotion.labels`.
-For `chain + multi-label`, the native `emotion` object is unchanged and the
-model additionally returns `evaluation_only_emotion_ranking`, containing
-exactly the native positive/negative candidates in global likelihood order.
-For chain multi-label evaluation, its first label is used by accuracy/F1 and
-observer agreement metrics. Emotion intensity is taken from that label's
-native positive or negative valence score.
+For `chain`, CAREBench synonyms are canonicalized first and the overlapping
+labels are mapped as follows: `glad -> joy`, `proud -> pride`,
+`angry -> anger`, `disgust -> disgust`, `sad -> sadness`,
+`ashamed -> shame`, and `guilty -> guilt`. The complete mapped set is used by
+`emotion_candidate_hit`. Standard single-label crowd-enVent metrics use the
+first mapped label from the valence with the larger intensity (positive wins an
+exact tie), while preserving the full mapped multi-label object in the output.
+The selected 0--6 valence intensity is mapped to crowd-enVent's 1--5 scale.
 
 The shared Transformers backend includes the Qwen3.5 wrapped-language-model
 LoRA compatibility remapping.  Omit `--model_is_adapter`, `--base_model`, and
@@ -98,7 +119,8 @@ LoRA compatibility remapping.  Omit `--model_is_adapter`, `--base_model`, and
 ## 3. Generate through an OpenAI-compatible API
 
 ```bash
-python crowd-envent_utils/generate_policy_crowd_envent.py \
+python crowd-envent_utils/evaluate_policy_crowd_envent.py \
+  --mode generate \
   --backend api \
   --api_provider glm \
   --api_model glm-5.1 \
@@ -108,6 +130,22 @@ python crowd-envent_utils/generate_policy_crowd_envent.py \
 ```
 
 GLM reads `ZAI_API_KEY` or `ZHIPUAI_API_KEY`; OpenAI reads `OPENAI_API_KEY`.
+Yinli models read `YINLI_API_KEY` and default to
+`https://vip.yinli.one/v1`. Use `--api_provider yinli-openai` for GPT-style
+models and `--api_provider yinli-glm` for GLM models. For example:
+
+```bash
+python crowd-envent_utils/evaluate_policy_crowd_envent.py \
+  --mode generate \
+  --backend api \
+  --generation_schema official-direct \
+  --api_provider yinli-openai \
+  --api_model gpt-6.1-sol \
+  --api_reasoning_effort low \
+  --api_omit_temperature \
+  --eval_file FirstPersonMethod/data/crowd_envent/test.json \
+  --predictions_file output/crowd-envent/gpt-6.1-sol/predictions.jsonl
+```
 
 ## 4. Compute automatic metrics
 
@@ -121,15 +159,17 @@ python crowd-envent_utils/compute_crowd_envent_metrics.py \
 Primary metrics use the event author's self-reported ratings/emotion.  The
 report also includes secondary agreement with the five outside validators.
 Rating/intensity metrics include MAE, RMSE, normalized MAE/RMSE, exact
-accuracy, and Spearman.  Emotion metrics include accuracy/micro-F1, macro-F1,
+accuracy, and Spearman. Chain reports `overall_5_ratings` and the five source
+fields only; official-direct retains `overall_21_ratings`. Emotion metrics
+include accuracy/micro-F1, macro-F1,
 weighted-F1, and per-label scores.  `emotion_candidate_hit` additionally
 reports whether the author's gold label occurs anywhere in the complete
-candidate set. `emotion_hit_at_k.by_k` reports Hit@1, Hit@2, and Hit@3 using
-only `multilabel_emotion.labels` for direct multi-label runs and
-`evaluation_only_emotion_ranking` for chain multi-label runs. No ranking is
-inferred from intensity or dataset label order. Treat candidate-set metrics as
-diagnostics, not classification accuracy, and report them together with
-`mean_candidate_count`.
+candidate set. `emotion_hit_at_k.by_k` reports Hit@1, Hit@2, and Hit@3 only
+when a genuine ordered ranking exists (for example, official-direct
+multi-label). The CAREBench chain mapping is an unordered candidate set, so no
+ranking is inferred from intensity or dataset label order. Treat candidate-set
+metrics as diagnostics, not classification accuracy, and report them together
+with `mean_candidate_count`.
 
 Missing or invalid predictions are penalized by default through a neutral
 failure prediction: all appraisal ratings are set to 3, emotion is set to

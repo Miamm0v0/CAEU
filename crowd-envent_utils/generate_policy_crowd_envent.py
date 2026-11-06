@@ -50,9 +50,19 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["single-label", "multi-label"],
         default="single-label",
         help=(
-            "single-label emits one of 13 crowd-enVent classes; multi-label "
-            "keeps the native CAEU valenced output plus an evaluation-only "
-            "ranking for chain, and uses a ranked label list for official-direct."
+            "Controls official-direct output only. chain always reuses the "
+            "CAREBench valenced multi-label emotion schema."
+        ),
+    )
+    parser.add_argument(
+        "--chain_primary_emotion_mode",
+        choices=["intensity", "model"],
+        default="intensity",
+        help=(
+            "How chain selects the single primary crowd-enVent emotion from "
+            "the mapped CAREBench candidate set. intensity preserves the old "
+            "deterministic rule; model adds a second emotion call that only "
+            "selects the primary label."
         ),
     )
     parser.add_argument(
@@ -85,10 +95,20 @@ def _configure_generation_flow(args: argparse.Namespace) -> None:
         args.task = "chain-all"
         args.chain_all_emotion_mode = "chain-emotion"
         args.chain_core_appraisals_source = "chain-emotion"
+        # Reuse the CAREBench Policy contract exactly: 22 appraisal ratings
+        # and valenced 20-class multi-label emotion with 0--6 intensities.
+        args.emotion_label_space_override = "carebench"
+        args.emotion_output_mode = "multi-label"
     else:
+        if args.chain_primary_emotion_mode != "intensity":
+            raise ValueError(
+                "--chain_primary_emotion_mode model requires "
+                "--generation_schema chain"
+            )
         args.task = "official-direct"
         args.chain_all_emotion_mode = "separate"
         args.chain_core_appraisals_source = "separate"
+        args.emotion_label_space_override = "crowd-envent"
 
 
 def main() -> int:
@@ -108,6 +128,7 @@ def main() -> int:
         args.sample_seed,
         generation_schema=args.generation_schema,
         emotion_output_mode=args.emotion_output_mode,
+        chain_primary_emotion_mode=args.chain_primary_emotion_mode,
     )
     return 0
 

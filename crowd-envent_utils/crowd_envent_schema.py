@@ -30,6 +30,8 @@ METHOD_APPRAISAL_DIMENSIONS = (
     "control_coping_potential",
 )
 
+APPRAISAL_INSUFFICIENT_VALUE = "insufficient_information"
+
 METHOD_APPRAISAL_DEFINITIONS = {
     "relevance": (
         "Why the event matters or does not matter to my goals, needs, "
@@ -103,19 +105,34 @@ CHAIN_SYSTEM_PROMPT = """You model the first-person cognitive appraisal process
 that connects an experienced situation to emotion. First reason using exactly
 five appraisal dimensions, then predict every requested crowd-enVent appraisal
 rating and finally predict one emotion and its intensity. Adopt the experiencer's
-perspective, ground every claim only in the situation, and do not invent goals,
-beliefs, intentions, causes, coping resources, consequences, or emotions. Return
-exactly one valid JSON object without markdown or commentary."""
+perspective and ground every claim only in the situation. For any appraisal
+dimension without enough evidence, use exactly "insufficient_information" as
+its value instead of inventing content. Do not invent goals, beliefs,
+intentions, causes, coping resources, consequences, or emotions. Return exactly
+one valid JSON object without markdown or commentary."""
 
 DIRECT_SYSTEM_PROMPT = """You predict first-person cognitive appraisal ratings
 and emotion from an experienced situation. Adopt the experiencer's perspective
 and use only evidence in the situation. Return exactly one valid JSON object
 without markdown or commentary."""
 
+OFFICIAL_DIRECT_APPRAISALS_SYSTEM_PROMPT = """You predict the event
+experiencer's crowd-enVent appraisal ratings directly from a first-person event
+description. Use only information supported by the description. Return exactly
+one valid JSON object without appraisal reasoning, emotion, markdown, or
+commentary."""
+
+OFFICIAL_DIRECT_EMOTION_SYSTEM_PROMPT = """You predict the event experiencer's
+emotion directly from a first-person event description. Use only information
+supported by the description. Return exactly one valid JSON object without
+appraisal reasoning, appraisal ratings, markdown, or commentary."""
+
 CHAIN_APPRAISALS_SYSTEM_PROMPT = """You model the first-person cognitive
 appraisal process. First reason using exactly five appraisal dimensions, then
 use that reasoning to predict all 21 crowd-enVent appraisal ratings. Adopt the
-experiencer's perspective, ground every claim only in the situation, and do not
+experiencer's perspective and ground every claim only in the situation. For any
+appraisal dimension without enough evidence, use exactly
+"insufficient_information" as its value instead of inventing content. Do not
 invent goals, beliefs, intentions, causes, coping resources, or consequences.
 Return exactly one valid JSON object without markdown or commentary."""
 
@@ -123,17 +140,20 @@ CHAIN_EMOTION_SYSTEM_PROMPT = """You model the first-person cognitive appraisal
 process that connects an experienced situation to emotion. First reason using
 exactly five appraisal dimensions, then use that reasoning to predict one
 crowd-enVent emotion and its intensity. Adopt the experiencer's perspective,
-ground every claim only in the situation, and do not invent goals, beliefs,
-intentions, causes, coping resources, consequences, or emotions. Return exactly
-one valid JSON object without markdown or commentary."""
+ground every claim only in the situation, and use exactly
+"insufficient_information" for any appraisal dimension without enough evidence.
+Do not invent goals, beliefs, intentions, causes, coping resources,
+consequences, or emotions. Return exactly one valid JSON object without markdown
+or commentary."""
 
 CAREBENCH_APPRAISALS_SYSTEM_PROMPT = """You model the first-person cognitive
 appraisal process. First write the shared core appraisals, then use those
 appraisals to rate the CAREBench appraisal statements. Adopt the experiencer's
-perspective, ground every claim only in the situation, and do not invent goals,
-beliefs, intentions, causes, coping resources, consequences, or emotions. Do
-not predict emotion in this call. Return exactly one valid JSON object without
-markdown or commentary."""
+perspective and ground every claim only in the situation. Use exactly
+"insufficient_information" for any appraisal dimension without enough evidence.
+Do not invent goals, beliefs, intentions, causes, coping resources,
+consequences, or emotions. Do not predict emotion in this call. Return exactly
+one valid JSON object without markdown or commentary."""
 
 CAREBENCH_EMOTION_SYSTEM_PROMPT = """You model the first-person cognitive
 appraisal process that connects an experienced situation to emotion. First
@@ -141,8 +161,9 @@ write the shared core appraisals, then use those appraisals to predict one
 emotion in the native crowd-enVent label and intensity format. Adopt the
 experiencer's perspective, ground every claim only in the situation, and do not
 invent goals, beliefs, intentions, causes, coping resources, consequences, or
-emotions. Do not rate appraisal statements in this call. Return exactly one
-valid JSON object without markdown or commentary."""
+emotions. Use exactly "insufficient_information" for any appraisal dimension
+without enough evidence. Do not rate appraisal statements in this call. Return
+exactly one valid JSON object without markdown or commentary."""
 
 CAREBENCH_ALIGNED_SYSTEM_PROMPT = CAREBENCH_APPRAISALS_SYSTEM_PROMPT
 
@@ -167,7 +188,10 @@ def output_schema(include_reasoning: bool = True) -> dict[str, Any]:
     payload: dict[str, Any] = {}
     if include_reasoning:
         payload["appraisal_reasoning"] = {
-            dimension: f"A concise first-person {dimension} appraisal."
+            dimension: (
+                "A concise first-person appraisal or exactly "
+                f"{APPRAISAL_INSUFFICIENT_VALUE}."
+            )
             for dimension in METHOD_APPRAISAL_DIMENSIONS
         }
     payload["appraisal_ratings"] = {
@@ -185,7 +209,10 @@ def carebench_aligned_output_schema(target: str | None = None) -> dict[str, Any]
         raise ValueError(f"Unknown carebench target {target!r}; allowed={list(CHAIN_TARGETS)}")
     payload: dict[str, Any] = {
         "core_appraisals": {
-            dimension: f"A concise first-person {dimension} appraisal."
+            dimension: (
+                "A concise first-person appraisal or exactly "
+                f"{APPRAISAL_INSUFFICIENT_VALUE}."
+            )
             for dimension in METHOD_APPRAISAL_DIMENSIONS
         },
     }
@@ -211,6 +238,11 @@ def build_policy_prompt(
     if include_reasoning:
         sections.append(
             "Appraisal reasoning dimensions:\n" + appraisal_definition_lines()
+        )
+        sections.append(
+            "For each dimension, write a concise first-person appraisal when "
+            "supported by the situation. Otherwise use exactly "
+            f'"{APPRAISAL_INSUFFICIENT_VALUE}" for that dimension.'
         )
     sections.extend(
         [
@@ -266,6 +298,11 @@ def build_carebench_aligned_prompt(
     sections = [
         "Situation (first-person experiencer):\n" + situation.strip(),
         "Step 1 - Core appraisals:\n" + appraisal_definition_lines(),
+        (
+            "For each dimension, write a concise first-person appraisal when "
+            "supported by the situation. Otherwise use exactly "
+            f'"{APPRAISAL_INSUFFICIENT_VALUE}" for that dimension.'
+        ),
         *target_sections,
         "Return exactly this JSON structure and exactly these keys:\n"
         + json.dumps(
@@ -287,7 +324,10 @@ def chain_target_output_schema(target: str) -> dict[str, Any]:
         raise ValueError(f"Unknown chain target {target!r}; allowed={list(CHAIN_TARGETS)}")
     payload: dict[str, Any] = {
         "appraisal_reasoning": {
-            dimension: f"A concise first-person {dimension} appraisal."
+            dimension: (
+                "A concise first-person appraisal or exactly "
+                f"{APPRAISAL_INSUFFICIENT_VALUE}."
+            )
             for dimension in METHOD_APPRAISAL_DIMENSIONS
         }
     }
@@ -298,6 +338,67 @@ def chain_target_output_schema(target: str) -> dict[str, Any]:
     else:
         payload["emotion"] = {"label": "joy", "intensity": 3}
     return payload
+
+
+def official_direct_output_schema(target: str) -> dict[str, Any]:
+    if target not in CHAIN_TARGETS:
+        raise ValueError(
+            f"Unknown official-direct target {target!r}; "
+            f"allowed={list(CHAIN_TARGETS)}"
+        )
+    if target == "appraisals":
+        return {
+            "appraisal_ratings": {field: 3 for field in APPRAISAL_FIELDS}
+        }
+    return {"emotion": {"label": "joy", "intensity": 3}}
+
+
+def build_official_direct_prompt(
+    situation: str,
+    target: str,
+    *,
+    correction: str = "",
+) -> str:
+    if target not in CHAIN_TARGETS:
+        raise ValueError(
+            f"Unknown official-direct target {target!r}; "
+            f"allowed={list(CHAIN_TARGETS)}"
+        )
+    sections = ["Situation:\n" + situation.strip()]
+    if target == "appraisals":
+        sections.extend(
+            [
+                "Predict the 21 crowd-enVent appraisal ratings directly.",
+                "Rate every appraisal using an integer from 1 (not at all) "
+                "to 5 (extremely):\n" + rating_definition_lines(),
+            ]
+        )
+    else:
+        sections.extend(
+            [
+                "Predict the crowd-enVent emotion directly.",
+                "Choose exactly one label:\n" + "\n".join(
+                    f"- {label}" for label in EMOTION_LABELS
+                ),
+                "Set emotion.intensity to an integer from 1 (not at all "
+                "intense) to 5 (extremely intense). The label and intensity "
+                "must describe the same single emotion.",
+            ]
+        )
+    sections.append(
+        "Return exactly this JSON structure and exactly these keys:\n"
+        + json.dumps(
+            official_direct_output_schema(target),
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    if correction:
+        sections.append(
+            "Your previous response was invalid. Return a fresh complete JSON "
+            f"object. Validation error: {correction[:1000]}"
+        )
+    return "\n\n".join(sections)
 
 
 def build_chain_target_prompt(
@@ -311,6 +412,11 @@ def build_chain_target_prompt(
     sections = [
         "Situation (first-person experiencer):\n" + situation.strip(),
         "Appraisal reasoning dimensions:\n" + appraisal_definition_lines(),
+        (
+            "For each dimension, write a concise first-person appraisal when "
+            "supported by the situation. Otherwise use exactly "
+            f'"{APPRAISAL_INSUFFICIENT_VALUE}" for that dimension.'
+        ),
     ]
     if target == "appraisals":
         sections.append("Required crowd-enVent ratings:\n" + rating_definition_lines())
@@ -474,6 +580,25 @@ def parse_chain_target_response(text: str, target: str) -> dict[str, Any]:
     else:
         normalized["emotion"] = normalize_emotion(payload["emotion"])
     return normalized
+
+
+def parse_official_direct_response(text: str, target: str) -> dict[str, Any]:
+    if target not in CHAIN_TARGETS:
+        raise ValueError(
+            f"Unknown official-direct target {target!r}; "
+            f"allowed={list(CHAIN_TARGETS)}"
+        )
+    payload = extract_json_object(text)
+    outcome_key = "appraisal_ratings" if target == "appraisals" else "emotion"
+    if set(payload) != {outcome_key}:
+        raise ValueError(
+            f"official-direct-{target} root keys mismatch: "
+            f"missing={sorted({outcome_key} - set(payload))}, "
+            f"extra={sorted(set(payload) - {outcome_key})}"
+        )
+    if target == "appraisals":
+        return {"appraisal_ratings": normalize_ratings(payload[outcome_key])}
+    return {"emotion": normalize_emotion(payload[outcome_key])}
 
 
 def parse_carebench_aligned_response(text: str, target: str) -> dict[str, Any]:

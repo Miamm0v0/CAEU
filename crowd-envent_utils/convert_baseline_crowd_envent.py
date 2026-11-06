@@ -23,7 +23,6 @@ from carebench_aligned_projection import (
     CROWD_ENVENT_NO_EMOTION,
     CROWD_ENVENT_POSITIVE_LABELS,
     normalize_carebench_appraisal_ratings,
-    project_crowd_envent_rating,
 )
 from crowd_envent_schema import (
     APPRAISAL_FIELDS,
@@ -33,10 +32,23 @@ from crowd_envent_schema import (
     normalize_reasoning,
 )
 from evaluate_policy_crowd_envent import load_evaluation_file, select_samples
+from baseline_transformers_chain import (
+    CAREBENCH_TO_CROWD_ENVENT_EMOTION,
+    PRIMARY_EMOTION_FIELD,
+)
+from sft_common import NEGATIVE_LABELS, POSITIVE_LABELS
 
 
 EVALUATION_ONLY_EMOTION_RANKING_FIELD = "evaluation_only_emotion_ranking"
 
+CHAIN_APPRAISAL_PROJECTION = {
+    "self_responsblt": "accountability.self",
+    "other_responsblt": "accountability.other",
+    "predict_event": "certainty.predictability",
+    "urgency": "relevance.urgency",
+    "effort": "control.effortful",
+}
+CHAIN_EVALUATED_APPRAISAL_FIELDS = tuple(CHAIN_APPRAISAL_PROJECTION)
 
 def _read_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -84,6 +96,112 @@ def _normalize_labels(value: Any, allowed: tuple[str, ...], field: str) -> list[
 
 def _scale_intensity(score: int) -> int:
     return max(1, min(5, int(math.floor(1.0 + score * (4.0 / 6.0) + 0.5))))
+
+
+def _normalize_carebench_policy_emotion(
+    raw_emotion: Any,
+    raw_primary_emotion: Any = None,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[str], str]:
+    """Map canonical CAREBench labels to the overlapping crowd-enVent labels."""
+    if not isinstance(raw_emotion, dict):
+        raise ValueError("chain-emotion output has no CAREBench emotion object")
+    expected = {
+        "positive_intensity",
+        "negative_intensity",
+        "positive_labels",
+        "negative_labels",
+    }
+    if set(raw_emotion) != expected:
+        raise ValueError(
+            "CAREBench emotion keys mismatch: "
+            f"missing={sorted(expected - set(raw_emotion))}, "
+            f"extra={sorted(set(raw_emotion) - expected)}"
+        )
+    positive_intensity = _require_intensity(
+        raw_emotion["positive_intensity"], "emotion.positive_intensity"
+    )
+    negative_intensity = _require_intensity(
+        raw_emotion["negative_intensity"], "emotion.negative_intensity"
+    )
+    positive_labels = _normalize_labels(
+        raw_emotion["positive_labels"],
+        tuple(POSITIVE_LABELS),
+        "emotion.positive_labels",
+    )
+    negative_labels = _normalize_labels(
+        raw_emotion["negative_labels"],
+        tuple(NEGATIVE_LABELS),
+        "emotion.negative_labels",
+    )
+    if positive_intensity == 0 and positive_labels:
+        raise ValueError("positive_labels must be empty when positive_intensity is 0")
+    if negative_intensity == 0 and negative_labels:
+        raise ValueError("negative_labels must be empty when negative_intensity is 0")
+
+    mapped_positive = [
+        CAREBENCH_TO_CROWD_ENVENT_EMOTION[label]
+        for label in positive_labels
+        if label in CAREBENCH_TO_CROWD_ENVENT_EMOTION
+    ]
+    mapped_negative = [
+        CAREBENCH_TO_CROWD_ENVENT_EMOTION[label]
+        for label in negative_labels
+        if label in CAREBENCH_TO_CROWD_ENVENT_EMOTION
+    ]
+    candidate_set = set(mapped_positive) | set(mapped_negative)
+    candidates = [label for label in EMOTION_LABELS if label in candidate_set]
+    if not candidates:
+        candidates = [CROWD_ENVENT_NO_EMOTION]
+
+    if raw_primary_emotion is not None:
+        if not isinstance(raw_primary_emotion, str):
+            raise ValueError(f"{PRIMARY_EMOTION_FIELD} must be a string")
+        primary = raw_primary_emotion.strip().casefold()
+        if primary not in candidates:
+            raise ValueError(
+                f"{PRIMARY_EMOTION_FIELD}={raw_primary_emotion!r} is not in "
+                f"the mapped candidate set {candidates}"
+            )
+        selection_source = "model"
+    else:
+        if mapped_positive and mapped_negative:
+            use_positive = positive_intensity >= negative_intensity
+        else:
+            use_positive = bool(mapped_positive)
+        if use_positive and mapped_positive:
+            primary = mapped_positive[0]
+        elif mapped_negative:
+            primary = mapped_negative[0]
+        else:
+            primary = CROWD_ENVENT_NO_EMOTION
+        selection_source = "intensity"
+
+    if primary in mapped_positive:
+        native = {
+            "label": primary,
+            "intensity": _scale_intensity(positive_intensity),
+        }
+    elif primary in mapped_negative:
+        native = {
+            "label": primary,
+            "intensity": _scale_intensity(negative_intensity),
+        }
+    else:
+        native = {"label": CROWD_ENVENT_NO_EMOTION, "intensity": 1}
+
+    normalized = {
+        "positive_intensity": positive_intensity,
+        "negative_intensity": negative_intensity,
+        "positive_labels": positive_labels,
+        "negative_labels": negative_labels,
+    }
+    mapped = {
+        "positive_intensity": positive_intensity,
+        "negative_intensity": negative_intensity,
+        "positive_labels": mapped_positive,
+        "negative_labels": mapped_negative,
+    }
+    return normalized, mapped, native, candidates, selection_source
 
 
 def _native_emotion(raw_emotion: Any) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -268,6 +386,7 @@ def convert_outputs(
     sample_seed: int = 42,
     generation_schema: str = "chain",
     emotion_output_mode: str = "single-label",
+    chain_primary_emotion_mode: str = "intensity",
 ) -> tuple[int, int]:
     if generation_schema not in {"chain", "official-direct"}:
         raise ValueError(
@@ -276,6 +395,14 @@ def convert_outputs(
     if emotion_output_mode not in {"single-label", "multi-label"}:
         raise ValueError(
             "emotion_output_mode must be 'single-label' or 'multi-label'"
+        )
+    if chain_primary_emotion_mode not in {"intensity", "model"}:
+        raise ValueError(
+            "chain_primary_emotion_mode must be 'intensity' or 'model'"
+        )
+    if generation_schema != "chain" and chain_primary_emotion_mode != "intensity":
+        raise ValueError(
+            "chain_primary_emotion_mode='model' requires generation_schema='chain'"
         )
     evaluation = load_evaluation_file(eval_file)
     samples = select_samples(evaluation["samples"], max_samples, sample_seed)
@@ -292,19 +419,35 @@ def convert_outputs(
             emotion_task = "direct-emotion"
         appraisal_path = baseline_output_folder / appraisal_task / f"{sample_id}.json"
         emotion_path = baseline_output_folder / emotion_task / f"{sample_id}.json"
+        primary_emotion_path = (
+            baseline_output_folder
+            / "chain-primary-emotion"
+            / f"{sample_id}.json"
+        )
         try:
             appraisal_trajectory = _read_json(appraisal_path)
             emotion_trajectory = _read_json(emotion_path)
+            raw_primary_emotion = None
+            if generation_schema == "chain" and chain_primary_emotion_mode == "model":
+                primary_emotion_trajectory = _read_json(primary_emotion_path)
+                if set(primary_emotion_trajectory) != {PRIMARY_EMOTION_FIELD}:
+                    raise ValueError(
+                        "chain-primary-emotion output must contain exactly "
+                        f"{PRIMARY_EMOTION_FIELD!r}"
+                    )
+                raw_primary_emotion = primary_emotion_trajectory[
+                    PRIMARY_EMOTION_FIELD
+                ]
             raw_emotion = emotion_trajectory.get("emotion")
-            if emotion_output_mode == "single-label":
-                expected_emotion_keys = {"label", "intensity"}
-            elif generation_schema == "chain":
+            if generation_schema == "chain":
                 expected_emotion_keys = {
                     "positive_intensity",
                     "negative_intensity",
                     "positive_labels",
                     "negative_labels",
                 }
+            elif emotion_output_mode == "single-label":
+                expected_emotion_keys = {"label", "intensity"}
             else:
                 expected_emotion_keys = {"labels", "intensity"}
             if not isinstance(raw_emotion, dict) or set(raw_emotion) != expected_emotion_keys:
@@ -313,20 +456,23 @@ def convert_outputs(
                     f"--emotion_output_mode {emotion_output_mode}: "
                     f"expected={sorted(expected_emotion_keys)}"
                 )
-            native_emotion, legacy_carebench_emotion = _normalize_external_emotion(
-                raw_emotion
-            )
-            emotion_candidate_labels = _emotion_candidate_labels(raw_emotion)
-            evaluation_only_emotion_ranking = None
-            if generation_schema == "chain" and emotion_output_mode == "multi-label":
-                evaluation_only_emotion_ranking = (
-                    _normalize_evaluation_only_emotion_ranking(
-                        emotion_trajectory.get(
-                            EVALUATION_ONLY_EMOTION_RANKING_FIELD
-                        ),
-                        raw_emotion,
-                    )
+            if generation_schema == "chain":
+                (
+                    carebench_emotion,
+                    mapped_emotion,
+                    native_emotion,
+                    emotion_candidate_labels,
+                    primary_emotion_selection,
+                ) = _normalize_carebench_policy_emotion(
+                    raw_emotion,
+                    raw_primary_emotion,
                 )
+                legacy_carebench_emotion = None
+            else:
+                native_emotion, legacy_carebench_emotion = (
+                    _normalize_external_emotion(raw_emotion)
+                )
+                emotion_candidate_labels = _emotion_candidate_labels(raw_emotion)
             if generation_schema == "chain":
                 raw_ratings = appraisal_trajectory.get("appraisals")
                 if not isinstance(raw_ratings, dict):
@@ -339,10 +485,9 @@ def convert_outputs(
                         for key, value in raw_ratings.items()
                     }
                 )
-                native_ratings = {
-                    field: project_crowd_envent_rating(field, carebench_ratings)
-                    for field in APPRAISAL_FIELDS
-                }
+                native_ratings = {field: 3 for field in APPRAISAL_FIELDS}
+                for field, carebench_key in CHAIN_APPRAISAL_PROJECTION.items():
+                    native_ratings[field] = carebench_ratings[carebench_key]
                 record = {
                     "sample_id": sample_id,
                     "source_id": sample.get("source_id"),
@@ -357,27 +502,28 @@ def convert_outputs(
                     },
                     "carebench_appraisal_ratings": carebench_ratings,
                     "appraisal_ratings": native_ratings,
+                    "evaluated_appraisal_fields": list(
+                        CHAIN_EVALUATED_APPRAISAL_FIELDS
+                    ),
                     "emotion": native_emotion,
                     "emotion_candidate_labels": emotion_candidate_labels,
+                    "carebench_multilabel_emotion": carebench_emotion,
+                    "mapped_crowd_envent_emotion": mapped_emotion,
+                    "primary_emotion_selection": primary_emotion_selection,
                     "projection": {
-                        "appraisals": "carebench_statement_projection_v1",
-                        "emotion": (
-                            "native_crowd_envent_single_label"
-                            if legacy_carebench_emotion is None
-                            else "baseline_split_intensity_to_crowd_envent_v1"
-                        ),
+                        "appraisals": "carebench_exact_five_rating_mapping_v1",
+                        "emotion": "carebench_seven_label_overlap_mapping_v1",
                     },
                     "baseline_outputs": {
                         "appraisals": str(appraisal_path),
                         "emotion": str(emotion_path),
+                        **(
+                            {"primary_emotion": str(primary_emotion_path)}
+                            if chain_primary_emotion_mode == "model"
+                            else {}
+                        ),
                     },
                 }
-                if legacy_carebench_emotion is not None:
-                    record["carebench_emotion"] = legacy_carebench_emotion
-                if evaluation_only_emotion_ranking is not None:
-                    record[EVALUATION_ONLY_EMOTION_RANKING_FIELD] = (
-                        evaluation_only_emotion_ranking
-                    )
             else:
                 if legacy_carebench_emotion is not None:
                     raise ValueError(
@@ -417,7 +563,16 @@ def convert_outputs(
                     "sample_id": sample_id,
                     "source_id": sample.get("source_id"),
                     "error": str(exc),
-                    "required_outputs": [str(appraisal_path), str(emotion_path)],
+                    "required_outputs": [
+                        str(appraisal_path),
+                        str(emotion_path),
+                        *(
+                            [str(primary_emotion_path)]
+                            if generation_schema == "chain"
+                            and chain_primary_emotion_mode == "model"
+                            else []
+                        ),
+                    ],
                 }
             )
 
@@ -454,6 +609,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["single-label", "multi-label"],
         default="single-label",
     )
+    parser.add_argument(
+        "--chain_primary_emotion_mode",
+        choices=["intensity", "model"],
+        default="intensity",
+    )
     return parser
 
 
@@ -468,6 +628,7 @@ def main() -> int:
         args.sample_seed,
         generation_schema=args.generation_schema,
         emotion_output_mode=args.emotion_output_mode,
+        chain_primary_emotion_mode=args.chain_primary_emotion_mode,
     )
     return 0
 

@@ -15,6 +15,7 @@ if str(UTILS_DIR) not in sys.path:
 
 from crowd_envent_metrics import build_metrics_report
 from crowd_envent_schema import (
+    APPRAISAL_INSUFFICIENT_VALUE,
     APPRAISAL_FIELDS,
     METHOD_APPRAISAL_DIMENSIONS,
     carebench_aligned_output_schema,
@@ -34,7 +35,6 @@ from judge_crowd_envent_reasoning import (
 from prepare_crowd_envent_eval import (
     CONFIRMED_REAL,
     first_person_situation,
-    mask_emotion_cues,
     select_generation_rows,
 )
 
@@ -42,8 +42,15 @@ from prepare_crowd_envent_eval import (
 class CrowdEnventSchemaTests(unittest.TestCase):
     def test_chain_policy_schema_round_trip(self) -> None:
         payload = output_schema(include_reasoning=True)
+        payload["appraisal_reasoning"]["epistemic"] = (
+            APPRAISAL_INSUFFICIENT_VALUE
+        )
         parsed = parse_policy_response(json.dumps(payload), include_reasoning=True)
         self.assertEqual(set(parsed["appraisal_reasoning"]), set(METHOD_APPRAISAL_DIMENSIONS))
+        self.assertEqual(
+            parsed["appraisal_reasoning"]["epistemic"],
+            APPRAISAL_INSUFFICIENT_VALUE,
+        )
         self.assertEqual(set(parsed["appraisal_ratings"]), set(APPRAISAL_FIELDS))
         self.assertEqual(parsed["emotion"]["label"], "joy")
 
@@ -94,13 +101,13 @@ class CrowdEnventSchemaTests(unittest.TestCase):
         self.assertIn("carebench_appraisal_ratings", parsed_appraisals)
         self.assertNotIn("carebench_emotion", parsed_emotion)
 
-    def test_emotion_mask_is_uniform_and_first_person(self) -> None:
-        masked = mask_emotion_cues("I felt joy, pride and ... after the event.")
-        self.assertNotIn("joy", masked.lower())
-        self.assertNotIn("pride", masked.lower())
-        self.assertIn("[EMOTION]", masked)
-        situation = first_person_situation(masked, "I experienced this:", False)
-        self.assertTrue(situation.startswith("I experienced this:"))
+    def test_generated_text_is_used_without_mask_or_prefix(self) -> None:
+        generated_text = "I felt joy, pride and ... after the event."
+        situation = first_person_situation(generated_text)
+        self.assertEqual(situation, generated_text)
+        self.assertIn("joy", situation.lower())
+        self.assertNotIn("[EMOTION]", situation)
+        self.assertNotIn("I experienced the following situation:", situation)
 
     def test_strict_validated_selection(self) -> None:
         rows = [
